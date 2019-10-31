@@ -123,7 +123,6 @@ else:
                 except Exception as e:
                     print("Error: "+str(e))
 
-# TODO commit code to bitbucket
 # TODO reserve db copy on dropbox
 # TODO use cur.commit() in Zudilnik methods instead of parse_command()
 # TODO schema for punishment table
