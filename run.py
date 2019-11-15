@@ -104,7 +104,7 @@ con = sqlite3.connect("db.sqlite3")
 con.row_factory = sqlite3.Row
 cur = con.cursor()
 
-deadline=dttime(5, 30)
+deadline=dttime(7, 15) # 07:15 AM
 zudilnik = Zudilnik(cur, deadline, )
 
 if len(sys.argv) >= 2:
@@ -114,14 +114,17 @@ else:
     while True:
         command_string = input('> ')
         if command_string.strip():
-            (command, *params) = shlex.split(command_string)
-            if command == 'exit':
-                break
-            else:
-                try:
-                    parse_command(zudilnik, command, params)
-                except Exception as e:
-                    print("Error: "+str(e))
+            try:
+                (command, *params) = shlex.split(command_string)
+                if command == 'exit':
+                    break
+                else:
+                    try:
+                        parse_command(zudilnik, command, params)
+                    except Exception as e:
+                        print("Error: "+str(e))
+            except ValueError as e:
+                print("Invalid input: "+str(e))
 
 # TODO reserve db copy on dropbox
 # TODO use cur.commit() in Zudilnik methods instead of parse_command()
@@ -131,3 +134,4 @@ else:
 # TODO deny immediate goal reduction
 # TODO use cmd module for better command line experience
 # TODO countable goals
+# TODO grib statistics for litres goal
