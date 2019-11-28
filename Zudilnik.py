@@ -161,6 +161,7 @@ class Zudilnik:
         endofday_dt = datetime.combine(now.date(), self.deadline)
         if now.time() > self.deadline:
             endofday_dt += timedelta(days=1)
+        startofday_dt = endofday_dt - timedelta(days=1)
         
         # get list of goal's subprojects
         if goal['subproject_id']:
@@ -173,15 +174,20 @@ class Zudilnik:
 
         # first calculate how much hours already worked
         self.cur.execute("""
-        SELECT SUM(duration) AS sum
+        SELECT SUM(duration) AS sum,
+            SUM(CASE WHEN started_at > ? THEN duration ELSE 0 END) AS sum_today
         FROM timelog
         WHERE subproject_id IN ("""+','.join(['?']*len(subproject_ids))+""")
             AND started_at > ?
             AND started_at <= ?
-        """, (*subproject_ids, goal_started_dt.timestamp(), endofday_dt.timestamp()))
-        seconds_worked = self.cur.fetchone()['sum']
+        """, (startofday_dt.timestamp(), *subproject_ids, goal_started_dt.timestamp(), endofday_dt.timestamp()))
+        worked_data = self.cur.fetchone()
+        seconds_worked = worked_data['sum']
+        seconds_worked_today = worked_data['sum_today']
         if not seconds_worked:
             seconds_worked = 0
+        if not seconds_worked_today:
+            seconds_worked_today = 0
 
         # then calculate how much work should be done by the end of the day
         total_hours_due = 0
@@ -215,6 +221,7 @@ class Zudilnik:
             "started": goal_started_dt.strftime('%F'),
             "last_hours_per_day": last_hours_per_day,
             "total_worked": seconds_to_hms(seconds_worked),
+            "total_worked_today": seconds_to_hms(seconds_worked_today),
         }
 
     def get_goals_info(self):

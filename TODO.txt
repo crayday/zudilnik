@@ -1,0 +1,13 @@
+* backup-db: add periodical_run.py to crontab (first run it each minute)
+* backup-db: in periodical_run.py write helloworld to log
+* backup-db: in periodical_run.py copypaste database to Dropbox
+* restart command
+* use cur.commit() in Zudilnik methods instead of parse_command()
+* day deadline
+* add 'apply when' functionality to 'hoursperday' command
+* deny immediate goal reduction
+* use cmd module for better command line experience
+* countable goals
+* grib statistics for litres goals
+* get absolute path to database (to be able to run script outside of it's parent directory)
+* backup-db: read backup path from config file

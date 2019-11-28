@@ -80,8 +80,9 @@ def parse_command(zudilnik, command, params):
                 ), time=False)
 
             vprint(
-                "(goal started at {}, last hours per day: {}, total worked: {})".format(
-                goal['started'], goal['last_hours_per_day'], goal['total_worked']
+                "(goal started at {}, hours per day: {}, worked today {}, total {})".format(
+                goal['started'], goal['last_hours_per_day'],
+                goal['total_worked_today'], goal['total_worked']
             ), time=False)
     
     elif command == 'timelog' or command == 'tl':
@@ -125,13 +126,3 @@ else:
                         print("Error: "+str(e))
             except ValueError as e:
                 print("Invalid input: "+str(e))
-
-# TODO reserve db copy on dropbox
-# TODO use cur.commit() in Zudilnik methods instead of parse_command()
-# TODO schema for punishment table
-# TODO day deadline
-# TODO add 'apply when' functionality to 'hoursperday' command
-# TODO deny immediate goal reduction
-# TODO use cmd module for better command line experience
-# TODO countable goals
-# TODO grib statistics for litres goal
