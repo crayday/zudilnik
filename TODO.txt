@@ -1,6 +1,7 @@
 * backup-db: add periodical_run.py to crontab (first run it each minute)
 * backup-db: in periodical_run.py write helloworld to log
 * backup-db: in periodical_run.py copypaste database to Dropbox
+* show all active subprojects of project
 * restart command
 * use cur.commit() in Zudilnik methods instead of parse_command()
 * day deadline
