@@ -59,14 +59,15 @@ class Zudilnik:
         else:
             return None
     
-    def start_subproject(self, subproject_name, comment = None):
+    def start_subproject(self, subproject_name, comment=None, restart_anyway=False):
         # fist find subproject to start
         self.cur.execute('SELECT id FROM subprojects WHERE name = ?', (subproject_name,))
         subproject = self.cur.fetchone()
         if not subproject:
             raise Exception("subproject "+subproject_name+" not found")
 
-        stoped_data = self.stop_last_record(subproject['id'])
+        dont_stop_subproject_id = None if restart_anyway else subproject['id']
+        stoped_data = self.stop_last_record(dont_stop_subproject_id)
 
         # now insert new record
         self.cur.execute("""
@@ -334,6 +335,17 @@ class Zudilnik:
                 "comment": row['comment'] if row['comment'] else '...'
             })
         return timelog
+
+    def get_projects(self):
+        return self.cur.execute("SELECT * FROM projects").fetchall()
+
+    def get_subprojects(self, project_name):
+        return self.cur.execute("""
+            SELECT sp.*
+            FROM projects p
+                JOIN subprojects sp ON sp.project_id = p.id
+            WHERE p.name = ?
+        """, (project_name,)).fetchall()
 
 ########################### supplementary functions ###########################
 def seconds_to_hms(seconds):

@@ -24,10 +24,11 @@ def parse_command(zudilnik, command, params):
         subproject_id = zudilnik.add_new_subproject(project_name, subproject_name)
         vprint('Added subproject "{}" #{}'.format(subproject_name, subproject_id))
 
-    elif command == 'start':
+    elif command == 'start' or command == 'restart':
         subproject_name = params[0]
         comment = params[1] if len(params) >= 2 else None
-        result = zudilnik.start_subproject(subproject_name, comment = None)
+        restart_anyway = (command == 'restart')
+        result = zudilnik.start_subproject(subproject_name, comment=comment, restart_anyway=restart_anyway)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
             vprint('Stoped record #{} started at {}, duration {}'.format(
@@ -95,6 +96,16 @@ def parse_command(zudilnik, command, params):
                     row['started_at'], row['stoped_at'], row['project'],
                     row['subproject'], row['comment'], row['duration']
                 ), time=False)
+    elif command == 'list' or command == 'ls':
+        project_name = params[0] if len(params) >= 1 else 0
+        if project_name:
+            # concrete project given - need to list all it's subprojects
+            projects = zudilnik.get_subprojects(project_name)
+        else:
+            # no project given - need to list all projects
+            projects = zudilnik.get_projects()
+        for project in projects:
+            vprint('#{} {}'.format(project['id'], project['name']), time=False)
 
     else:
         raise Exception("unknown command "+command)
