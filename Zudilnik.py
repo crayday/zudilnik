@@ -93,7 +93,7 @@ class Zudilnik:
             'record_started_at': started_at_dt.strftime('%F %T'),
         }
 
-    def add_new_goal(self, project_name, goal_name):
+    def add_new_goal(self, project_name, goal_name, goal_type='hours_light'):
         # first try to search for subproject with given name
         self.cur.execute("""
             SELECT id, project_id FROM subprojects WHERE name = ? 
@@ -112,9 +112,9 @@ class Zudilnik:
             else:
                 raise Exception("project {} not found".format(project_name))
         self.cur.execute("""
-            INSERT INTO goals (project_id, subproject_id, name, created_at)
-            VALUES (?,?,?,STRFTIME('%s','now'))
-        """, (project_id, subproject_id, goal_name))
+            INSERT INTO goals (project_id, subproject_id, name, goal_type, created_at)
+            VALUES (?,?,?,?,STRFTIME('%s','now'))
+        """, (project_id, subproject_id, goal_name, goal_type))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (goal_id,) = self.cur.fetchone()
         return goal_id
@@ -155,9 +155,9 @@ class Zudilnik:
         goal_started_dt = datetime.combine(goal_created_dt.date(), self.deadline)
         # if goal was created before deadline, then goal start time is in previous day
         if goal_created_dt.time() < self.deadline:
-            goal_started_dt = goal_started_dt - timedelta(days=1)
+            goal_started_dt -= timedelta(days=1)
 
-        # get end of the day
+        # get start & end of the day
         now = datetime.now()
         endofday_dt = datetime.combine(now.date(), self.deadline)
         if now.time() > self.deadline:
@@ -193,8 +193,13 @@ class Zudilnik:
         # then calculate how much work should be done by the end of the day
         total_hours_due = 0
         last_hours_per_day = 0
-        day = self.get_commitment_date(goal_created_dt)
         current_commitment_date = self.get_commitment_date(now)
+
+        if goal['type'] == 'hours_mandatory':
+            day = self.get_commitment_date(goal_created_dt)
+        else: # hours_light
+            day = current_commitment_date
+
         while day <= current_commitment_date:
             commitments = self.get_commitments_by_date(goal['id'], day)
             if commitments:
@@ -204,8 +209,13 @@ class Zudilnik:
                 hours_due = 0
             last_hours_per_day = hours_due
             day += timedelta(days=1)
+	
         total_seconds_due = 3600 * total_hours_due
-        left_seconds_due = total_seconds_due - seconds_worked
+
+        if goal['type'] == 'hours_mandatory':
+            left_seconds_due = total_seconds_due - seconds_worked
+        else: # hours_light
+            left_seconds_due = total_seconds_due - seconds_worked_today
 
         if left_seconds_due >= 0:
             status = 'due'
@@ -232,7 +242,7 @@ class Zudilnik:
             WHERE archived_at IS NULL
         """)
         goals_info = []
-        for goal in self.cur:
+        for goal in self.cur.fetchall():
             goals_info.append(self.get_goal_info(goal['id']))
 
         return goals_info

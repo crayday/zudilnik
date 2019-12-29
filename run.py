@@ -55,7 +55,8 @@ def parse_command(zudilnik, command, params):
 
     elif command == 'newgoal' or command == 'ng':
         (project_name, goal_name) = params
-        goal_id = zudilnik.add_new_goal(project_name, goal_name)
+        goal_type = params[2] if len(params) > 2 else 'hours_light'
+        goal_id = zudilnik.add_new_goal(project_name, goal_name, goal_type)
         vprint('Added goal "{}" #{}'.format(goal_name, goal_id))
 
     elif command == 'hoursperday' or command == 'hpd':
@@ -70,14 +71,14 @@ def parse_command(zudilnik, command, params):
     elif command == 'goalsinfo' or command == 'gi':
         goals_info = zudilnik.get_goals_info()
         for goal in goals_info:
-            vprint(goal['name'], time=False)
+            vprint('# '+goal['name'], time=False)
             if goal['status'] == 'due':
                 vprint("DUE {} more before {}".format(
                     goal['duration'], goal['deadline']
                 ), time=False)
             else:
                 vprint("OVERWORKED goal by {}".format(
-                    (goal['duration'],)
+                    goal['duration']
                 ), time=False)
 
             vprint(
