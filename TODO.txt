@@ -1,5 +1,4 @@
 * allow omit task name in start/restart command - take last task instead
-* command for deleting current unfinished time record
 * countable goals
 * backup-db: add periodical_run.py to crontab (first run it each minute)
 * backup-db: in periodical_run.py write helloworld to log

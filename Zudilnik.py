@@ -80,17 +80,46 @@ class Zudilnik:
             "subproject": subproject,
         }
 
-    def comment_last_subproject(self, comment):
+    def comment_last_record(self, comment):
         last_time_record = self.get_last_time_record()
         if not last_time_record:
             raise Exception("No time records at all")
+        return self.comment_record(last_time_record['id'], comment)
+
+    def comment_record(self, record_id, comment):
         self.cur.execute("""
-            UPDATE timelog SET comment = ? WHERE id = ?
-        """, (comment, last_time_record['id']))
-        started_at_dt = datetime.fromtimestamp(last_time_record['started_at'])
+        SELECT * FROM timelog WHERE id = ?
+        """, (record_id,))
+        record = self.cur.fetchone()
+        if not record:
+            raise Exception("Timelog record {} is not found".format(record_id))
+        self.cur.execute("""
+        UPDATE timelog SET comment = ? WHERE id = ?
+        """, (comment, record_id))
+        started_at_dt = datetime.fromtimestamp(record['started_at'])
         return {
-            'record_id': last_time_record['id'],
+            'record_id': record_id,
             'record_started_at': started_at_dt.strftime('%F %T'),
+        }
+
+    def delete_last_record(self):
+        last_time_record = self.get_last_time_record()
+        if not last_time_record:
+            raise Exception("No time records at all")
+        return self.delete_record(last_time_record['id'])
+
+    def delete_record(self, record_id):
+        self.cur.execute("""
+        SELECT id FROM timelog WHERE id = ?
+        """, (record_id,))
+        record = self.cur.fetchone()
+        if not record:
+            raise Exception("Timelog record {} is not found".format(record_id))
+        self.cur.execute("""
+        DELETE FROM timelog WHERE id = ? 
+        """, (record_id,))
+        return {
+            'record_id': record_id,
         }
 
     def add_new_goal(self, project_name, goal_name, goal_type='hours_light'):
@@ -112,7 +141,7 @@ class Zudilnik:
             else:
                 raise Exception("project {} not found".format(project_name))
         self.cur.execute("""
-            INSERT INTO goals (project_id, subproject_id, name, goal_type, created_at)
+            INSERT INTO goals (project_id, subproject_id, name, type, created_at)
             VALUES (?,?,?,?,STRFTIME('%s','now'))
         """, (project_id, subproject_id, goal_name, goal_type))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
@@ -233,6 +262,7 @@ class Zudilnik:
             "last_hours_per_day": last_hours_per_day,
             "total_worked": seconds_to_hms(seconds_worked),
             "total_worked_today": seconds_to_hms(seconds_worked_today),
+            "total_seconds_due": seconds_to_hms(total_seconds_due),
         }
 
     def get_goals_info(self):
@@ -243,7 +273,9 @@ class Zudilnik:
         """)
         goals_info = []
         for goal in self.cur.fetchall():
-            goals_info.append(self.get_goal_info(goal['id']))
+            goal_info = self.get_goal_info(goal['id'])
+            if goal_info['total_seconds_due'] != '0':
+                goals_info.append(goal_info)
 
         return goals_info
 

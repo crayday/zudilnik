@@ -47,11 +47,23 @@ def parse_command(zudilnik, command, params):
             ))
 
     elif command == 'comment':
-        comment = params[0]
-        data = zudilnik.comment_last_subproject(comment)
+        record_id = params[0]
+        comment = params[1]
+        if record_id == 'last':
+            data = zudilnik.comment_last_record(comment)
+        else:
+            data = zudilnik.comment_record(record_id, comment)
         vprint('Updated comment for record #{} started at {}'.format(
             data['record_id'], data['record_started_at']
         ))
+
+    elif command == 'delete' or command == 'del':
+        record_id = params[0]
+        if record_id == 'last':
+            data = zudilnik.delete_last_record()
+        else:
+            data = zudilnik.delete_record(int(record_id))
+        vprint('Deleted record #{}'.format(data['record_id']))
 
     elif command == 'newgoal' or command == 'ng':
         (project_name, goal_name) = params
@@ -71,32 +83,33 @@ def parse_command(zudilnik, command, params):
     elif command == 'goalsinfo' or command == 'gi':
         goals_info = zudilnik.get_goals_info()
         for goal in goals_info:
-            vprint('# '+goal['name'], time=False)
+            print('# '+goal['name'])
             if goal['status'] == 'due':
-                vprint("DUE {} more before {}".format(
+                print("DUE {} more before {}".format(
                     goal['duration'], goal['deadline']
-                ), time=False)
+                ))
             else:
-                vprint("OVERWORKED goal by {}".format(
+                print("OVERWORKED goal by {}".format(
                     goal['duration']
-                ), time=False)
+                ))
 
-            vprint(
+            print(
                 "(goal started at {}, hours per day: {}, worked today {}, total {})".format(
                 goal['started'], goal['last_hours_per_day'],
                 goal['total_worked_today'], goal['total_worked']
-            ), time=False)
+            ))
     
     elif command == 'timelog' or command == 'tl':
         limit = params[0] if len(params) >= 1 else 12
         timelog = zudilnik.get_timelog(limit)
         for day in timelog:
-            vprint(day, time=False)
+            print(day)
             for row in timelog[day]:
-                vprint(' {}-{}: [{}/{}] - {} ({})'.format(
-                    row['started_at'], row['stoped_at'], row['project'],
+                print('#{} {}-{}: [{}/{}] - {} ({})'.format(
+                    row['id'], row['started_at'], row['stoped_at'], row['project'],
                     row['subproject'], row['comment'], row['duration']
-                ), time=False)
+                ))
+            print('')
     elif command == 'list' or command == 'ls':
         project_name = params[0] if len(params) >= 1 else 0
         if project_name:
@@ -106,7 +119,7 @@ def parse_command(zudilnik, command, params):
             # no project given - need to list all projects
             projects = zudilnik.get_projects()
         for project in projects:
-            vprint('#{} {}'.format(project['id'], project['name']), time=False)
+            print('#{} {}'.format(project['id'], project['name']))
 
     else:
         raise Exception("unknown command "+command)
