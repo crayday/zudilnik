@@ -25,7 +25,7 @@ def parse_command(zudilnik, command, params):
         vprint('Added subproject "{}" #{}'.format(subproject_name, subproject_id))
 
     elif command == 'start' or command == 'restart':
-        subproject_name = params[0]
+        subproject_name = params[0] if len(params) >= 1 else None
         comment = params[1] if len(params) >= 2 else None
         restart_anyway = (command == 'restart')
         result = zudilnik.start_subproject(subproject_name, comment=comment, restart_anyway=restart_anyway)
@@ -36,7 +36,7 @@ def parse_command(zudilnik, command, params):
                 stoped_data['duration']
             ))
 
-        vprint('Started subproject #{}'.format(result['subproject']['id']))
+        vprint('Started subproject #{} {}'.format(result['subproject']['id'], result['subproject']['name']))
 
     elif command == 'stop':
         stoped_data = zudilnik.stop_last_record()
@@ -47,12 +47,18 @@ def parse_command(zudilnik, command, params):
             ))
 
     elif command == 'comment':
-        record_id = params[0]
-        comment = params[1]
+        if len(params) >= 2:
+            record_id = params[0]
+            comment = params[1]
+        else:
+            record_id = 'last'
+            comment = params[0]
+
         if record_id == 'last':
             data = zudilnik.comment_last_record(comment)
         else:
             data = zudilnik.comment_record(record_id, comment)
+
         vprint('Updated comment for record #{} started at {}'.format(
             data['record_id'], data['record_started_at']
         ))

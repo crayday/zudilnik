@@ -59,12 +59,22 @@ class Zudilnik:
         else:
             return None
     
-    def start_subproject(self, subproject_name, comment=None, restart_anyway=False):
+    def start_subproject(self, subproject_name=None, comment=None, restart_anyway=False):
         # fist find subproject to start
-        self.cur.execute('SELECT id FROM subprojects WHERE name = ?', (subproject_name,))
+        if subproject_name:
+            self.cur.execute('SELECT id, name FROM subprojects WHERE name = ?', (subproject_name,))
+            not_found_error = "subproject "+subproject_name+" not found"
+        else:
+            self.cur.execute("""
+            SELECT s.id, s.name
+            FROM timelog t
+                JOIN subprojects s ON s.id = t.subproject_id
+            ORDER BY t.id DESC LIMIT 1
+            """)
+            not_found_error = "No subprojects with timelog records at all"
         subproject = self.cur.fetchone()
         if not subproject:
-            raise Exception("subproject "+subproject_name+" not found")
+            raise Exception(not_found_error)
 
         dont_stop_subproject_id = None if restart_anyway else subproject['id']
         stoped_data = self.stop_last_record(dont_stop_subproject_id)
