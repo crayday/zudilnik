@@ -33,7 +33,7 @@ class Zudilnik:
 
     def get_last_time_record(self):
         self.cur.execute("""
-        SELECT * FROM timelog ORDER BY id DESC LIMIT 1
+        SELECT * FROM timelog ORDER BY started_at DESC, id DESC LIMIT 1
         """)
         return self.cur.fetchone()
 
@@ -62,8 +62,7 @@ class Zudilnik:
     def start_subproject(self, subproject_name=None, comment=None, restart_anyway=False):
         # fist find subproject to start
         if subproject_name:
-            self.cur.execute('SELECT id, name FROM subprojects WHERE name = ?', (subproject_name,))
-            not_found_error = "subproject "+subproject_name+" not found"
+            subproject = self.get_project(subproject_name)
         else:
             self.cur.execute("""
             SELECT s.id, s.name
@@ -71,10 +70,9 @@ class Zudilnik:
                 JOIN subprojects s ON s.id = t.subproject_id
             ORDER BY t.id DESC LIMIT 1
             """)
-            not_found_error = "No subprojects with timelog records at all"
-        subproject = self.cur.fetchone()
-        if not subproject:
-            raise Exception(not_found_error)
+            subproject = self.cur.fetchone()
+            if not subproject:
+                raise Exception("No subprojects with timelog records at all")
 
         dont_stop_subproject_id = None if restart_anyway else subproject['id']
         stoped_data = self.stop_last_record(dont_stop_subproject_id)
@@ -97,12 +95,7 @@ class Zudilnik:
         return self.comment_record(last_time_record['id'], comment)
 
     def comment_record(self, record_id, comment):
-        self.cur.execute("""
-        SELECT * FROM timelog WHERE id = ?
-        """, (record_id,))
-        record = self.cur.fetchone()
-        if not record:
-            raise Exception("Timelog record {} is not found".format(record_id))
+        record = self.verify_record(record_id)
         self.cur.execute("""
         UPDATE timelog SET comment = ? WHERE id = ?
         """, (comment, record_id))
@@ -119,18 +112,106 @@ class Zudilnik:
         return self.delete_record(last_time_record['id'])
 
     def delete_record(self, record_id):
-        self.cur.execute("""
-        SELECT id FROM timelog WHERE id = ?
-        """, (record_id,))
-        record = self.cur.fetchone()
-        if not record:
-            raise Exception("Timelog record {} is not found".format(record_id))
+        self.verify_record(record_id)
         self.cur.execute("""
         DELETE FROM timelog WHERE id = ? 
         """, (record_id,))
         return {
             'record_id': record_id,
         }
+
+    def set_last_record_stop_time(self, time_str):
+        last_time_record = self.get_last_time_record()
+        if not last_time_record:
+            raise Exception("No time records at all")
+        return self.set_record_start_time(last_time_record['id'], time_str)
+
+    def set_record_start_time(self, record_id, time_str):
+        record = self.verify_record(record_id)
+        started_at_dt = self.datetime_from_string(time_str)
+        if started_at_dt and record['stoped_at']:
+            duration = record['stoped_at'] - started_at_dt.timestamp()
+        else:
+            duration = None
+        self.cur.execute("""
+        UPDATE timelog SET started_at = ?, duration = ? WHERE id = ? 
+        """, (started_at_dt.timestamp(), duration, record_id))
+
+        return {
+            'record_id': record_id,
+            'started_at': started_at_dt.strftime('%F %T'),
+            'duration': seconds_to_hms(duration),
+        }
+
+    def set_last_record_stop_time(self, time_str):
+        last_time_record = self.get_last_time_record()
+        if not last_time_record:
+            raise Exception("No time records at all")
+        return self.set_record_stop_time(last_time_record['id'], time_str)
+
+    def set_record_stop_time(self, record_id, time_str):
+        record = self.verify_record(record_id)
+        stoped_at_dt = self.datetime_from_string(time_str)
+        if record['started_at'] and stoped_at_dt:
+            duration = stoped_at_dt.timestamp() - record['started_at']
+        else:
+            duration = None
+        self.cur.execute("""
+        UPDATE timelog SET stoped_at = ?, duration = ? WHERE id = ? 
+        """, (stoped_at_dt.timestamp(), duration, record_id))
+
+        return {
+            'record_id': record_id,
+            'stoped_at': stoped_at_dt.strftime('%F %T'),
+            'duration': seconds_to_hms(duration),
+        }
+
+    def datetime_from_string(self, time_str):
+        match = re.match(r'(\d{2}):(\d{2})', time_str)
+        if match:
+            dt = datetime.now()
+            return dt.replace(hour = int(match.group(1)), minute = int(match.group(2)))
+        match = re.match(r'(\d{4}).(\d{2}).(\d{2}) (\d{2}):(\d{2})', time_str)
+        if match:
+            return datetime.datetime(
+                year = int(match.group(1)),
+                month = int(match.group(2)),
+                day = int(match.group(3)),
+                hour = int(match.group(4)),
+                minute = int(match.group(5)))
+        raise Exception("Doesn't support time string '"+time_str+"'")
+
+    def set_last_record_project(self, project_name):
+        last_time_record = self.get_last_time_record()
+        if not last_time_record:
+            raise Exception("No time records at all")
+        return self.set_record_project(last_time_record['id'], project_name)
+
+    def set_record_project(self, record_id, project_name):
+        self.verify_record(record_id)
+        project = self.get_project(project_name)
+        self.cur.execute("""
+        UPDATE timelog SET subproject_id = ? WHERE id = ? 
+        """, (project['id'], record_id))
+        return {
+            'record_id': record_id,
+        }
+
+    def get_project(self, project_name):
+        self.cur.execute('SELECT * FROM subprojects WHERE name = ?', (project_name,))
+        project = self.cur.fetchone()
+        if not project:
+            raise Exception("project "+project_name+" not found")
+        return project
+
+    def verify_record(self, record_id):
+        self.cur.execute("""
+        SELECT * FROM timelog WHERE id = ?
+        """, (record_id,))
+        record = self.cur.fetchone()
+        if not record:
+            raise Exception("Timelog record {} is not found".format(record_id))
+        return record
 
     def add_new_goal(self, project_name, goal_name, goal_type='hours_light'):
         # first try to search for subproject with given name

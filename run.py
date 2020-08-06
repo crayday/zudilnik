@@ -116,6 +116,7 @@ def parse_command(zudilnik, command, params):
                     row['subproject'], row['comment'], row['duration']
                 ))
             print('')
+
     elif command == 'list' or command == 'ls':
         project_name = params[0] if len(params) >= 1 else 0
         if project_name:
@@ -127,6 +128,45 @@ def parse_command(zudilnik, command, params):
         for project in projects:
             print('#{} {}'.format(project['id'], project['name']))
 
+    elif command == 'set':
+        if len(params) >= 3:
+            record_id = params[0]
+            field = params[1]
+            value = params[2]
+        else:
+            record_id = 'last'
+            field = params[0]
+            value = params[1]
+
+        if field == 'started':
+            time_str = value
+            if record_id == 'last':
+                data = zudilnik.set_last_record_start_time(time_str)
+            else:
+                data = zudilnik.set_record_start_time(int(record_id), time_str)
+            vprint('Updated record #{}, now started at {}, duration {}'.format(
+                data['record_id'], data['started_at'],
+                data['duration']
+            ))
+        elif field == 'stoped':
+            time_str = value
+            if record_id == 'last':
+                data = zudilnik.set_last_record_stop_time(time_str)
+            else:
+                data = zudilnik.set_record_stop_time(int(record_id), time_str)
+            vprint('Updated record #{}, now stoped at {}, duration {}'.format(
+                data['record_id'], data['stoped_at'],
+                data['duration']
+            ))
+        elif field == 'project':
+            project_name = value
+            if record_id == 'last':
+                data = zudilnik.set_last_record_project(project_name)
+            else:
+                data = zudilnik.set_record_project(int(record_id), project_name)
+            vprint('Updated project for record #{}'.format(data['record_id']))
+        else:
+            raise Exception("unknown field '"+field+"' to set")
     else:
         raise Exception("unknown command "+command)
 

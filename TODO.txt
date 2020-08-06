@@ -1,7 +1,19 @@
-* countable goals
+* get rid of subprojects, leave only projects.
+  - create projects.parent field
+  - add field timelog.project_id with corresponding key
+  - make a script that will go for each subproject and:
+    * create corresponding projects record (with same projects.parent value as in subprojects.parent)
+    * fill timelog.project_id field with new ID for all timelog.subproject_id = <OLD_ID>
+  - remove field.timelog.subproject_id field
+  - remove goals.subproject_id field
+  - fix code
+* command for counting total duration of some subproject in an interval like
+  "2020-02-19" for single day or "2020-02-12 2020-02-19" for week or "2020-02"
+  for month
 * backup-db: add periodical_run.py to crontab (first run it each minute)
 * backup-db: in periodical_run.py write helloworld to log
 * backup-db: in periodical_run.py copypaste database to Dropbox
+* countable goals
 * use cur.commit() in Zudilnik methods instead of parse_command()
 * day deadline
 * add 'apply when' functionality to 'hoursperday' command
