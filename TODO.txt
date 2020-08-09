@@ -1,3 +1,10 @@
+* sometimes this error occures:
+	| > start
+	| Traceback (most recent call last):
+	| 	File "run.py", line 187, in <module>
+	| 		command_string = input('> ')
+	| UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd1 in position 4: invalid continuation byte
+	need to fix or at least wrap it into try block
 * get rid of subprojects, leave only projects.
   - create projects.parent field
   - add field timelog.project_id with corresponding key

@@ -138,17 +138,22 @@ def parse_command(zudilnik, command, params):
             field = params[0]
             value = params[1]
 
-        if field == 'started':
+        if field == 'started' or field == 'start':
             time_str = value
             if record_id == 'last':
                 data = zudilnik.set_last_record_start_time(time_str)
             else:
                 data = zudilnik.set_record_start_time(int(record_id), time_str)
-            vprint('Updated record #{}, now started at {}, duration {}'.format(
-                data['record_id'], data['started_at'],
-                data['duration']
-            ))
-        elif field == 'stoped':
+            if data['duration']:
+                vprint('Updated record #{}, now started at {}, duration {}'.format(
+                    data['record_id'], data['started_at'],
+                    data['duration']
+                ))
+            else:
+                vprint('Updated record #{}, now started at {}'.format(
+                    data['record_id'], data['started_at'],
+                ))
+        elif field == 'stoped' or field == 'stop':
             time_str = value
             if record_id == 'last':
                 data = zudilnik.set_last_record_stop_time(time_str)
