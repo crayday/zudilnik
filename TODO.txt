@@ -1,3 +1,4 @@
+* implement prelast (penult), preprelast (penpenult) etc.
 * sometimes this error occures:
 	| > start
 	| Traceback (most recent call last):
@@ -14,9 +15,25 @@
   - remove field.timelog.subproject_id field
   - remove goals.subproject_id field
   - fix code
-* command for counting total duration of some subproject in an interval like
-  "2020-02-19" for single day or "2020-02-12 2020-02-19" for week or "2020-02"
-  for month
+* command for counting total duration of some subproject in an interval
+  like "2020-02-19" for single day
+  or "2020-02-12 2020-02-19" for week
+  or "2020-02" for month
+  E.g.:
+  select sum(duration)/3600.0 from timelog where subproject_id in (select id from subprojects where project_id = (select id from projects where name = "litres")) and started_at between strftime('%s',"2020-08-18 07:15:00+03:00") and strftime('%s',"2020-08-19 07:15:00+03:00");
+* ability to archive old subprojects.
+  - add field archived_at
+  - select old subprojects list this:
+    | select distinct sp.id, sp.name
+    | from subprojects sp
+    |   left join timelog t on t.subproject_id = sp.id
+    |     and t.started_at > strftime('%s', 'now') - 3600*24*30*2 -- 2 month
+    | where sp.project_id = 1
+    |   and t.id is null
+    | group by sp.id;
+* ability to archive goals like this:
+  > archivegoal lt2020
+  archivegoal|ag <GOALNAME>
 * backup-db: add periodical_run.py to crontab (first run it each minute)
 * backup-db: in periodical_run.py write helloworld to log
 * backup-db: in periodical_run.py copypaste database to Dropbox

@@ -486,13 +486,19 @@ def seconds_to_hms(seconds):
 def datetime_from_string(time_str):
     match = re.match(r'(\d{2}):(\d{2})(?::(\d{2}))?', time_str)
     if match:
-        dt = datetime.now()
+        now = datetime.now()
         second = int(match.group(3)) if match.group(3) else 0
-        return dt.replace(hour = int(match.group(1)), minute = int(match.group(2)), second = second)
+        dt = now.replace(hour = int(match.group(1)), minute = int(match.group(2)), second = second)
+        if dt > now:
+            # Calculated time appeared in future.
+            # Certanly time should refer to the previous day not to the future
+            return dt - timedelta(days=1)
+        else:
+            return dt
     match = re.match(r'(\d{4}).(\d{2}).(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?', time_str)
     if match:
         second = int(match.group(6)) if match.group(6) else 0
-        return datetime.datetime(
+        return datetime(
             year = int(match.group(1)),
             month = int(match.group(2)),
             day = int(match.group(3)),

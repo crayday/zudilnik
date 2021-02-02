@@ -189,9 +189,9 @@ if len(sys.argv) >= 2:
     parse_command(zudilnik, command, params)
 else:
     while True:
-        command_string = input('> ')
-        if command_string.strip():
-            try:
+        try:
+            command_string = input('> ')
+            if command_string.strip():
                 (command, *params) = shlex.split(command_string)
                 if command == 'exit':
                     break
@@ -199,6 +199,8 @@ else:
                     try:
                         parse_command(zudilnik, command, params)
                     except Exception as e:
-                        print("Error: "+str(e))
-            except ValueError as e:
-                print("Invalid input: "+str(e))
+                        vprint("Error: "+str(e))
+        except ValueError as e:
+            vprint("Invalid input: "+str(e))
+        except UnicodeDecodeError as e:
+            vprint("Something wrong with input encoding: "+str(e))
