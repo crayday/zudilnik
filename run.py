@@ -1,17 +1,34 @@
 import sys
-import sqlite3
 import shlex
 from datetime import datetime, timedelta, time as dttime, date as dtdate
 from Zudilnik import Zudilnik
 
 verbose=True
 
-def vprint(string, time=True): # verbose print
-    if verbose:
-        if time:
-            print('{}: {}'.format(datetime.now().strftime('%H:%M'), string))
-        else:
-            print(string)
+def main():
+    deadline=dttime(7, 15) # 07:15 AM
+    zudilnik = Zudilnik(deadline)
+
+    if len(sys.argv) >= 2:
+        (script_name, command, *params) = sys.argv
+        parse_command(zudilnik, command, params)
+    else:
+        while True:
+            try:
+                command_string = input('> ')
+                if command_string.strip():
+                    (command, *params) = shlex.split(command_string)
+                    if command == 'exit':
+                        break
+                    else:
+                        try:
+                            parse_command(zudilnik, command, params)
+                        except Exception as e:
+                            vprint("Error: "+str(e))
+            except ValueError as e:
+                vprint("Invalid input: "+str(e))
+            except UnicodeDecodeError as e:
+                vprint("Something wrong with input encoding: "+str(e))
 
 def parse_command(zudilnik, command, params):
     if command == 'newproject' or command == 'np':
@@ -175,32 +192,11 @@ def parse_command(zudilnik, command, params):
     else:
         raise Exception("unknown command "+command)
 
-    con.commit()
+def vprint(string, time=True): # verbose print
+    if verbose:
+        if time:
+            print('{}: {}'.format(datetime.now().strftime('%H:%M'), string))
+        else:
+            print(string)
 
-con = sqlite3.connect("db.sqlite3")
-con.row_factory = sqlite3.Row
-cur = con.cursor()
-
-deadline=dttime(7, 15) # 07:15 AM
-zudilnik = Zudilnik(cur, deadline, )
-
-if len(sys.argv) >= 2:
-    (script_name, command, *params) = sys.argv
-    parse_command(zudilnik, command, params)
-else:
-    while True:
-        try:
-            command_string = input('> ')
-            if command_string.strip():
-                (command, *params) = shlex.split(command_string)
-                if command == 'exit':
-                    break
-                else:
-                    try:
-                        parse_command(zudilnik, command, params)
-                    except Exception as e:
-                        vprint("Error: "+str(e))
-        except ValueError as e:
-            vprint("Invalid input: "+str(e))
-        except UnicodeDecodeError as e:
-            vprint("Something wrong with input encoding: "+str(e))
+main()

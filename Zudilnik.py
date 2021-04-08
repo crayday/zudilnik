@@ -1,12 +1,15 @@
 from datetime import datetime, timedelta, time as dttime, date as dtdate
 from time import time
 import re
+import sqlite3
 
 class Zudilnik:
-    def __init__(self, cur, deadline):
-        self.cur = cur
+    def __init__(self, deadline):
         self.deadline = deadline # last sec. of commitment day before deadline
                                  # (NOT first sec. of day after deadline)
+        self.con = sqlite3.connect("db.sqlite3")
+        self.con.row_factory = sqlite3.Row
+        self.cur = self.con.cursor()
 
     def is_deadline_before_noon(self):
         return self.deadline < dttime(12)
@@ -17,6 +20,7 @@ class Zudilnik:
         """, (project_name, int(time())))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (project_id,) = self.cur.fetchone()
+        self.con.commit()
         return project_id
 
     def add_new_subproject(self, project_name, subproject_name):
@@ -29,6 +33,7 @@ class Zudilnik:
         """, (project['id'], subproject_name, int(time())))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (subproject_id,) = self.cur.fetchone()
+        self.con.commit()
         return subproject_id
 
     def get_last_time_record(self):
@@ -37,7 +42,7 @@ class Zudilnik:
         """)
         return self.cur.fetchone()
 
-    def stop_last_record(self, subproject_id_to_start=None):
+    def stop_last_record(self, subproject_id_to_start=None, commit=True):
         last_time_record = self.get_last_time_record()
 
         # check if last time record was stopped. If not - stop it
@@ -50,6 +55,8 @@ class Zudilnik:
             self.cur.execute("""
             UPDATE timelog SET stoped_at = ?, duration = ? WHERE id = ?
             """, (now, duration, last_time_record['id']))
+            if commit:
+                self.con.commit()
 
             return {
                 "last_record_id": last_time_record['id'],
@@ -75,13 +82,14 @@ class Zudilnik:
                 raise Exception("No subprojects with timelog records at all")
 
         dont_stop_subproject_id = None if restart_anyway else subproject['id']
-        stoped_data = self.stop_last_record(dont_stop_subproject_id)
+        stoped_data = self.stop_last_record(dont_stop_subproject_id, commit=False)
 
         # now insert new record
         self.cur.execute("""
             INSERT INTO timelog (subproject_id, started_at, comment)
             VALUES (?, ?, ?)
         """, (subproject['id'], int(time()), comment))
+        self.con.commit()
 
         return {
             "stoped_last_record": stoped_data,
@@ -99,6 +107,7 @@ class Zudilnik:
         self.cur.execute("""
         UPDATE timelog SET comment = ? WHERE id = ?
         """, (comment, record_id))
+        self.con.commit()
         started_at_dt = datetime.fromtimestamp(record['started_at'])
         return {
             'record_id': record_id,
@@ -116,6 +125,7 @@ class Zudilnik:
         self.cur.execute("""
         DELETE FROM timelog WHERE id = ? 
         """, (record_id,))
+        self.con.commit()
         return {
             'record_id': record_id,
         }
@@ -136,6 +146,7 @@ class Zudilnik:
         self.cur.execute("""
         UPDATE timelog SET started_at = ?, duration = ? WHERE id = ? 
         """, (started_at_dt.timestamp(), duration, record_id))
+        self.con.commit()
 
         return {
             'record_id': record_id,
@@ -159,6 +170,7 @@ class Zudilnik:
         self.cur.execute("""
         UPDATE timelog SET stoped_at = ?, duration = ? WHERE id = ? 
         """, (stoped_at_dt.timestamp(), duration, record_id))
+        self.con.commit()
 
         return {
             'record_id': record_id,
@@ -178,6 +190,7 @@ class Zudilnik:
         self.cur.execute("""
         UPDATE timelog SET subproject_id = ? WHERE id = ? 
         """, (project['id'], record_id))
+        self.con.commit()
         return {
             'record_id': record_id,
         }
@@ -222,6 +235,7 @@ class Zudilnik:
         """, (project_id, subproject_id, goal_name, goal_type))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (goal_id,) = self.cur.fetchone()
+        self.con.commit()
         return goal_id
 
     def get_commitment_date(self, dt):
@@ -418,6 +432,7 @@ class Zudilnik:
                 INSERT INTO hoursperday (goal_id, weekday, hours, date_from)
                 VALUES (?, ?, ?, ?)
             """, (goal['id'], weekday, hours, commitment_date_str))
+        self.con.commit()
 
     def get_timelog(self, limit=10):
         self.cur.execute("""
