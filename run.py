@@ -42,9 +42,15 @@ def parse_command(zudilnik, command, params):
         vprint('Added subproject "{}" #{}'.format(subproject_name, subproject_id))
 
     elif command == 'start' or command == 'restart':
-        subproject_name = params[0] if len(params) >= 1 else None
-        comment = params[1] if len(params) >= 2 else None
-        restart_anyway = (command == 'restart')
+        if command == 'restart':
+            subproject_name = None
+            comment = params[0] if len(params) >= 1 else None
+            restart_anyway = True
+        else:
+            subproject_name = params[0] if len(params) >= 1 else None
+            comment = params[1] if len(params) >= 2 else None
+            restart_anyway = False
+
         result = zudilnik.start_subproject(subproject_name, comment=comment, restart_anyway=restart_anyway)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
@@ -106,21 +112,23 @@ def parse_command(zudilnik, command, params):
     elif command == 'goalsinfo' or command == 'gi':
         goals_info = zudilnik.get_goals_info()
         for goal in goals_info:
-            print('# '+goal['name'])
+            print(f"# {goal['name']}")
             if goal['status'] == 'due':
-                print("DUE {} more before {}".format(
-                    goal['duration'], goal['deadline']
-                ))
+                print(f"DUE {goal['duration']} more before {goal['deadline']}")
             else:
-                print("OVERWORKED goal by {}".format(
-                    goal['duration']
-                ))
+                print(f"OVERWORKED goal by {goal['duration']}")
 
-            print(
-                "(goal started at {}, hours per day: {}, worked today {}, total {})".format(
-                goal['started'], goal['last_hours_per_day'],
-                goal['total_worked_today'], goal['total_worked']
-            ))
+            print(f"(goal started at {goal['started']}, "
+                f"hours per day: {goal['last_hours_per_day']}, "
+                f"worked today {goal['total_worked_today']}, "
+                f"total {goal['total_worked']})")
+
+    elif command == 'worked':
+        goal_name = params[0]
+        from_date = params[1]
+        to_date = params[2] if len(params) >= 3 else from_date
+        worked_time, from_dt, to_dt = zudilnik.worked_on_goal2(goal_name, from_date, to_date)
+        print(f"worked {worked_time} from {from_dt} to {to_dt} on {goal_name}")
     
     elif command == 'timelog' or command == 'tl':
         limit = params[0] if len(params) >= 1 else 12

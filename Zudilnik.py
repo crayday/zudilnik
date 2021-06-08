@@ -250,20 +250,20 @@ class Zudilnik:
     def get_commitments_by_date(self, goal_id, day):
         day_str = day.isoformat()
         self.cur.execute("""
-        SELECT *
-        FROM hoursperday
-        WHERE goal_id = ?
-            AND weekday = ?
-            AND date_from <= ?
-            AND (date_to IS NULL OR date_to >= ?)
-        ORDER BY date_from DESC
+            SELECT *
+            FROM hoursperday
+            WHERE goal_id = ?
+                AND weekday = ?
+                AND date_from <= ?
+                AND (date_to IS NULL OR date_to >= ?)
+            ORDER BY date_from DESC
         """, (goal_id, day.isoweekday(), day_str, day_str))
         return self.cur.fetchall()
 
     def get_goal_info(self, goal_id):
         # get goal
         self.cur.execute("""
-        SELECT * FROM goals WHERE id = ?
+            SELECT * FROM goals WHERE id = ?
         """, (goal_id,))
         goal = self.cur.fetchone()
         if not goal:
@@ -281,33 +281,9 @@ class Zudilnik:
         endofday_dt = datetime.combine(now.date(), self.deadline)
         if now.time() > self.deadline:
             endofday_dt += timedelta(days=1)
-        startofday_dt = endofday_dt - timedelta(days=1)
-        
-        # get list of goal's subprojects
-        if goal['subproject_id']:
-            subproject_ids = [goal['subproject_id']]
-        else:
-            self.cur.execute("""
-            SELECT id FROM subprojects WHERE project_id = ?
-            """, (goal['project_id'],))
-            subproject_ids = [row['id'] for row in self.cur]
 
         # first calculate how much hours already worked
-        self.cur.execute("""
-        SELECT SUM(duration) AS sum,
-            SUM(CASE WHEN started_at > ? THEN duration ELSE 0 END) AS sum_today
-        FROM timelog
-        WHERE subproject_id IN ("""+','.join(['?']*len(subproject_ids))+""")
-            AND started_at > ?
-            AND started_at <= ?
-        """, (startofday_dt.timestamp(), *subproject_ids, goal_started_dt.timestamp(), endofday_dt.timestamp()))
-        worked_data = self.cur.fetchone()
-        seconds_worked = worked_data['sum']
-        seconds_worked_today = worked_data['sum_today']
-        if not seconds_worked:
-            seconds_worked = 0
-        if not seconds_worked_today:
-            seconds_worked_today = 0
+        seconds_worked, seconds_worked_today = self.worked_on_goal(goal, goal_started_dt, endofday_dt, calculate_last_day = True)
 
         # then calculate how much work should be done by the end of the day
         total_hours_due = 0
@@ -354,6 +330,68 @@ class Zudilnik:
             "total_worked_today": seconds_to_hms(seconds_worked_today),
             "total_seconds_due": seconds_to_hms(total_seconds_due),
         }
+
+    def worked_on_goal2(self, goal_name, from_date, to_date=None):
+        self.cur.execute('SELECT * FROM goals WHERE name = ?', (goal_name,))
+        goal = self.cur.fetchone()
+        if not goal:
+            raise Exception(f"goal '{goal_name}' not found")
+        pass
+
+        from_dt = date_from_string(from_date, self.deadline)
+        if to_date:
+            to_dt = date_from_string(to_date, self.deadline) + timedelta(days=1)
+        else:
+            to_dt = from_dt + timedelta(days=1)
+
+        seconds_worked = self.worked_on_goal(goal, from_dt, to_dt)
+        return seconds_to_hms(seconds_worked), from_dt, to_dt
+
+    def worked_on_goal(self, goal, from_dt, to_dt, calculate_last_day = False):
+        # get list of goal's subprojects
+        if goal['subproject_id']:
+            subproject_ids = [goal['subproject_id']]
+        else:
+            self.cur.execute("""
+                SELECT id FROM subprojects WHERE project_id = ?
+            """, (goal['project_id'],))
+            subproject_ids = [row['id'] for row in self.cur]
+
+        startofday_dt = to_dt - timedelta(days=1)
+
+        # calculate how much hours worked
+        fields, params = [], []
+        if calculate_last_day:
+            fields.append("SUM(CASE WHEN started_at > ? THEN duration ELSE 0 END) AS sum_last_day")
+            params.append(startofday_dt.timestamp())
+        else:
+            select_worked_last_day = ""
+
+        fields_str = ''.join([f+', ' for f in fields])
+        placeholder_str = ','.join(['?']*len(subproject_ids))
+        self.cur.execute(f"""
+            SELECT {fields_str}
+                SUM(duration) AS sum
+            FROM timelog
+            WHERE subproject_id IN ({placeholder_str})
+                AND started_at > ?
+                AND started_at <= ?
+        """, (*params, *subproject_ids, from_dt.timestamp(), to_dt.timestamp()))
+
+        worked_data = self.cur.fetchone()
+        seconds_worked = worked_data['sum']
+        if calculate_last_day:
+            seconds_worked_last_day = worked_data['sum_last_day']
+            if not seconds_worked_last_day:
+                seconds_worked_last_day = 0
+
+        if not seconds_worked:
+            seconds_worked = 0
+
+        if calculate_last_day:
+            return seconds_worked, seconds_worked_last_day
+        else:
+            return seconds_worked
 
     def get_goals_info(self):
         self.cur.execute("""
@@ -520,4 +558,17 @@ def datetime_from_string(time_str):
             hour = int(match.group(4)),
             minute = int(match.group(5)),
             second = second)
-    raise Exception("Doesn't support time string '"+time_str+"'")
+    raise Exception(f"Doesn't support time string '{time_str}'")
+
+def date_from_string(date_str, default_time=None):
+    match = re.match(r'(?:(\d{4}).)?(?:(\d{1,2}).)?(\d{1,2})$', date_str)
+    if match:
+        today = dtdate.today()
+        return datetime(
+            year = int(match.group(1)) if match.group(1) else today.year,
+            month = int(match.group(2)) if match.group(2) else today.month,
+            day = int(match.group(3)),
+            hour = default_time.hour,
+            minute = default_time.minute,
+            second = default_time.second)
+    raise Exception(f"Doesn't support date string '{date_str}'")

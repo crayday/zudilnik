@@ -4,11 +4,30 @@
 X use cur.commit() in Zudilnik methods instead of parse_command()
 
 -----------------------------------------------------------------------------
+2021.04.11
+
+X command "worked" for calculating work hours on some goal or task
+X replaced some format() strings with f-strings
+
+-----------------------------------------------------------------------------
+2021.04.12
+
+X support short dates in "worked" command like "11" in april instead of "2021-04-11"
+
+-----------------------------------------------------------------------------
+2021.04.21
+
+X in restart command comment is a second argument
+
+-----------------------------------------------------------------------------
 TODO 
 
+* in the 'goalinfo' command output data about how much worked this week
+  (from monday), this month (from 1st day of month)
 * in the 'goalinfo' command output data about 7 days (worked x/y hours)
 * implement prelast (penult), preprelast (penpenult) etc.
   (in commands like "set", "comment")
+* support short dates in "hoursperday" command
 * sometimes this error occures:
 	| > start
 	| Traceback (most recent call last):
