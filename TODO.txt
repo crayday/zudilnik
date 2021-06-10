@@ -20,6 +20,11 @@ X support short dates in "worked" command like "11" in april instead of "2021-04
 X in restart command comment is a second argument
 
 -----------------------------------------------------------------------------
+2021.06.10
+
+* supported commands in a format "set project <PROJECT> <COMMENT>"
+
+-----------------------------------------------------------------------------
 TODO 
 
 * in the 'goalinfo' command output data about how much worked this week

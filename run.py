@@ -154,14 +154,17 @@ def parse_command(zudilnik, command, params):
             print('#{} {}'.format(project['id'], project['name']))
 
     elif command == 'set':
-        if len(params) >= 3:
+        fields = ['start', 'started', 'stop', 'stoped', 'project']
+        if len(params) >= 3 and params[1] in fields:
             record_id = params[0]
             field = params[1]
             value = params[2]
+            comment = params[3] if len(params) >= 4 else None
         else:
             record_id = 'last'
             field = params[0]
             value = params[1]
+            comment = params[2] if len(params) >= 3 else None
 
         if field == 'started' or field == 'start':
             time_str = value
@@ -197,6 +200,13 @@ def parse_command(zudilnik, command, params):
             vprint('Updated project for record #{}'.format(data['record_id']))
         else:
             raise Exception("unknown field '"+field+"' to set")
+
+        print(f"hello {comment}!") # FIXME
+        if comment and record_id == 'last':
+            zudilnik.comment_last_record(comment)
+        elif comment:
+            zudilnik.comment_record(record_id, comment)
+        print("hello again!") # FIXME
     else:
         raise Exception("unknown command "+command)
 
