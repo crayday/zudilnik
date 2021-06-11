@@ -201,12 +201,10 @@ def parse_command(zudilnik, command, params):
         else:
             raise Exception("unknown field '"+field+"' to set")
 
-        print(f"hello {comment}!") # FIXME
         if comment and record_id == 'last':
             zudilnik.comment_last_record(comment)
         elif comment:
             zudilnik.comment_record(record_id, comment)
-        print("hello again!") # FIXME
     else:
         raise Exception("unknown command "+command)
 
