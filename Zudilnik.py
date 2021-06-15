@@ -106,11 +106,11 @@ class Zudilnik:
         record = self.verify_record(record_id)
         self.cur.execute("""
         UPDATE timelog SET comment = ? WHERE id = ?
-        """, (comment, record_id))
+        """, (comment, record['id']))
         self.con.commit()
         started_at_dt = datetime.fromtimestamp(record['started_at'])
         return {
-            'record_id': record_id,
+            'record_id': record['id'],
             'record_started_at': started_at_dt.strftime('%F %T'),
         }
 
