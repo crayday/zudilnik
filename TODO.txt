@@ -29,33 +29,37 @@ X in restart command comment is a second argument
 
 * cmdrun: use cmd module for better command line experience
 * add "comment" command to new cmdrun
+* move commands start,restart,delete,set to cmdrun
+
+-----------------------------------------------------------------------------
+2021.06.17
+
+* add eval to commands executions (otherwise it shuts down on a single exception)
+* move "worked" command to cmdrun
 
 -----------------------------------------------------------------------------
 TODO 
 
+* implement the single command (from argv) execution mode for cmdrun
 * get rid of Zudilnik "comment_last_record" method at all
   * in "comment_record" method rename record_id to smth like record_identificator
   * if record_identificator > 0 then all goes as it goes
   * if record_identificator <= 0 then we get record like last, penult, penpenult etc
+* implement prelast (penult), preprelast (penpenult) etc.
+  (in commands like "set", "comment")
 * alternative command like "worked" but for projects/subprojects instead of goals
+* command for counting total duration of some subproject in an interval
+  like "2020-02-19" for single day
+  or "2020-02-12 2020-02-19" for week
+  or "2020-02" for month
+  E.g.:
+  select sum(duration)/3600.0 from timelog where subproject_id in (select id from subprojects where project_id = (select id from projects where name = "litres")) and started_at between strftime('%s',"2020-08-18 07:15:00+03:00") and strftime('%s',"2020-08-19 07:15:00+03:00");
 * command that will print every project that was working on during a given period of time
   and time spent on it
 * in the 'goalinfo' command output data about how much worked this week
   (from monday), this month (from 1st day of month)
 * in the 'goalinfo' command output data about 7 days (worked x/y hours)
-* implement prelast (penult), preprelast (penpenult) etc.
-  (in commands like "set", "comment")
 * support short dates in "hoursperday" command
-* sometimes this error occures:
-	| > start
-	| Traceback (most recent call last):
-	| 	File "run.py", line 187, in <module>
-	| 		command_string = input('> ')
-	| UnicodeDecodeError: 'utf-8' codec can't decode byte 0xd1 in position 4: invalid continuation byte
-	need to fix or at least wrap it into try block.
-  Another version:
-  | Invalid input: 'utf-8' codec can't decode byte 0xd0 in position 9: invalid continuation byte
-  NEED to replace all 0xd0, 0xd1 bytes with nothingness... perhaps
 * get rid of subprojects, leave only projects.
   - create projects.parent field
   - add field timelog.project_id with corresponding key
@@ -65,12 +69,6 @@ TODO
   - remove field.timelog.subproject_id field
   - remove goals.subproject_id field
   - fix code
-* command for counting total duration of some subproject in an interval
-  like "2020-02-19" for single day
-  or "2020-02-12 2020-02-19" for week
-  or "2020-02" for month
-  E.g.:
-  select sum(duration)/3600.0 from timelog where subproject_id in (select id from subprojects where project_id = (select id from projects where name = "litres")) and started_at between strftime('%s',"2020-08-18 07:15:00+03:00") and strftime('%s',"2020-08-19 07:15:00+03:00");
 * ability to archive old subprojects.
   - add field archived_at
   - select old subprojects list this:
