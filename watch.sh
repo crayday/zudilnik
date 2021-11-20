@@ -1,1 +1,1 @@
-watch 'python3 run.py gi && echo && python3 run.py tl 40'
+watch 'python3 cmdrun.py gi && echo && python3 cmdrun.py tl 40'

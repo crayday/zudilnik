@@ -38,9 +38,15 @@ X in restart command comment is a second argument
 * move "worked" command to cmdrun
 
 -----------------------------------------------------------------------------
+2021.06.19
+
+* moved all other commands to cmdrun
+* implemented shortcuts to command with do_SHORTCUT
+* implemented the single command (from argv) execution mode for cmdrun
+
+-----------------------------------------------------------------------------
 TODO 
 
-* implement the single command (from argv) execution mode for cmdrun
 * get rid of Zudilnik "comment_last_record" method at all
   * in "comment_record" method rename record_id to smth like record_identificator
   * if record_identificator > 0 then all goes as it goes
@@ -54,6 +60,8 @@ TODO
   or "2020-02" for month
   E.g.:
   select sum(duration)/3600.0 from timelog where subproject_id in (select id from subprojects where project_id = (select id from projects where name = "litres")) and started_at between strftime('%s',"2020-08-18 07:15:00+03:00") and strftime('%s',"2020-08-19 07:15:00+03:00");
+  ***
+  select sum(duration)/3600.0 from timelog where subproject_id = (select id from subprojects where name = "d20prog") and started_at between strftime('%s',"2021-06-23 00:00:00+03:00") and strftime('%s',"2021-06-24 00:00:00+03:00");
 * command that will print every project that was working on during a given period of time
   and time spent on it
 * in the 'goalinfo' command output data about how much worked this week

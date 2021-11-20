@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import cmd
+import sys
 import shlex
 import re
 from datetime import datetime, timedelta, time as dttime, date as dtdate
@@ -17,18 +19,14 @@ def matching_options(text, options):
 def cmd_prompt():
     return f"{datetime.now().strftime('%H:%M')}> "
 
-def try_split_params(line):
-    try:
-        params = shlex.split(line)
-    except Exception:
-        params = []
-    return params
+def vprint(string): # verbose print
+    print(f"{datetime.now().strftime('%H:%M')}: {string}")
 
 def runcmd_uninterrupted(cmdobj):
     try:
         cmdobj.cmdloop()
     except Exception as e:
-        print("Error: "+str(e))
+        vprint("Error: "+str(e))
         runcmd_uninterrupted(cmdobj)
 
 class ZudilnikCmd(cmd.Cmd):
@@ -37,13 +35,6 @@ class ZudilnikCmd(cmd.Cmd):
     def __init__(self, zud):
         self.zud = zud
         super().__init__()
-
-    def precmd(self, line):
-        params = try_split_params(line)
-        is_exit_command = len(params) > 0 and params[0] in ['exit', 'EOF']
-        if len(line) != 0 and not is_exit_command:
-            print(datetime.now().strftime('%H:%M')+" ", end='')
-        return line
 
     def postcmd(self, stop, line):
         self.prompt = cmd_prompt()
@@ -76,9 +67,9 @@ class ZudilnikCmd(cmd.Cmd):
         result = self.zud.start_subproject(subproject_name, comment=comment)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
-            print(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
+            vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
 
-        print(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
+        vprint(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
 
     def do_restart(self, line):
         params = shlex.split(line)
@@ -87,14 +78,17 @@ class ZudilnikCmd(cmd.Cmd):
         result = self.zud.start_subproject(None, comment=comment, restart_anyway=True)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
-            print(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
+            vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
 
-        print(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
+        vprint(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
 
     def do_stop(self, line):
         stoped_data = self.zud.stop_last_record()
         if stoped_data:
-            print(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
+            vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
+
+    def do_del(self, line): # shortcut for delete
+        return self.do_delete(line)
 
     def do_delete(self, line):
         params = shlex.split(line)
@@ -103,7 +97,7 @@ class ZudilnikCmd(cmd.Cmd):
             data = self.zud.delete_last_record()
         else:
             data = self.zud.delete_record(int(record_id))
-        print(f"Deleted record #{data['record_id']}")
+        vprint(f"Deleted record #{data['record_id']}")
 
     def do_comment(self, line):
         """comment <text> | comment <record_id> <text> - comments a given record or the last record if not specified"""
@@ -120,7 +114,7 @@ class ZudilnikCmd(cmd.Cmd):
         else:
             data = self.zud.comment_record(record_id, comment)
 
-        print(f"Updated comment for record #{data['record_id']} started at {data['record_started_at']}")
+        vprint(f"Updated comment for record #{data['record_id']} started at {data['record_started_at']}")
 
     def do_set(self, line):
         params = shlex.split(line)
@@ -144,23 +138,23 @@ class ZudilnikCmd(cmd.Cmd):
             else:
                 data = self.zud.set_record_start_time(int(record_id), time_str)
             if data['duration']:
-                print(f"Updated record #{data['record_id']}, now started at {data['started_at']}, duration {data['duration']}")
+                vprint(f"Updated record #{data['record_id']}, now started at {data['started_at']}, duration {data['duration']}")
             else:
-                print(f"Updated record #{data['record_id']}, now started at {data['started_at']}")
+                vprint(f"Updated record #{data['record_id']}, now started at {data['started_at']}")
         elif field == 'stoped' or field == 'stop':
             time_str = value
             if record_id == 'last':
                 data = self.zud.set_last_record_stop_time(time_str)
             else:
                 data = self.zud.set_record_stop_time(int(record_id), time_str)
-            print(f"Updated record #{data['record_id']}, now stoped at {data['stoped_at']}, duration {data['duration']}")
+            vprint(f"Updated record #{data['record_id']}, now stoped at {data['stoped_at']}, duration {data['duration']}")
         elif field == 'project':
             project_name = value
             if record_id == 'last':
                 data = self.zud.set_last_record_project(project_name)
             else:
                 data = self.zud.set_record_project(int(record_id), project_name)
-            print(f"Updated project for record #{data['record_id']}")
+            vprint(f"Updated project for record #{data['record_id']}")
         else:
             raise Exception("unknown field '"+field+"' to set")
 
@@ -168,6 +162,88 @@ class ZudilnikCmd(cmd.Cmd):
             self.zud.comment_last_record(comment)
         elif comment:
             self.zud.comment_record(record_id, comment)
+
+    def do_np(self, line): # shortcut for newproject
+        return self.do_newproject(line)
+
+    def do_newproject(self, line):
+        (project_name) = shlex.split(line)
+        project_id = self.zud.add_new_project(project_name)
+        vprint(f'Added project "{project_name}" #{project_id}')
+    
+    def do_new(self, line):
+        (project_name, subproject_name) = shlex.split(line)
+        subproject_id = self.zud.add_new_subproject(project_name, subproject_name)
+        vprint(f'Added subproject "{subproject_name}" #{subproject_id}')
+
+    def do_ls(self, line): # shortcut for list
+        return self.do_list(line)
+
+    def do_list(self, line):
+        params = shlex.split(line)
+        project_name = params[0] if len(params) >= 1 else 0
+        if project_name:
+            # concrete project given - need to list all it's subprojects
+            projects = self.zud.get_subprojects(project_name)
+        else:
+            # no project given - need to list all projects
+            projects = self.zud.get_projects()
+        for project in projects:
+            vprint(f"#{project['id']} {project['name']}")
+
+    def do_tl(self, line): # shortcut for timelog
+        return self.do_timelog(line)
+    
+    def do_timelog(self, line):
+        params = shlex.split(line)
+        limit = params[0] if len(params) >= 1 else 12
+        timelog = self.zud.get_timelog(limit)
+        for day in timelog:
+            print(day)
+            for row in timelog[day]:
+                print(f"#{row['id']} {row['started_at']}-{row['stoped_at']}: "+
+                      f"[{row['project']}/{row['subproject']}] - "+
+                      f"{row['comment']} ({row['duration']})")
+            print('')
+
+    def do_ng(self, line): # shortcut for newgoal
+        return self.do_newgoal(line)
+
+    def do_newgoal(self, line):
+        (project_name, goal_name) = shlex.split(line)
+        goal_type = params[2] if len(params) > 2 else 'hours_light'
+        goal_id = self.zud.add_new_goal(project_name, goal_name, goal_type)
+        vprint(f'Added goal "{goal_name}" #{goal_id}')
+
+    def do_hpd(self, line): # shortcut for hoursperday
+        return self.do_hoursperday(line)
+
+    def do_hoursperday(self, line):
+        params = shlex.split(line)
+        goal_name = params[0]
+        hours = params[1]
+        weekday_filter = params[2] if len(params) > 2 else None
+
+        self.zud.set_hours_per_day(goal_name, hours, weekday_filter)
+
+        vprint(f"Commited to work on '{goal_name}' for {hours} hours on days {weekday_filter}")
+
+    def do_gi(self, line): # shortcut for goalsinfo
+        return self.do_goalsinfo(line)
+
+    def do_goalsinfo(self, line):
+        goals_info = self.zud.get_goals_info()
+        for goal in goals_info:
+            print(f"# {goal['name']}")
+            if goal['status'] == 'due':
+                print(f"DUE {goal['duration']} more before {goal['deadline']}")
+            else:
+                print(f"OVERWORKED goal by {goal['duration']}")
+
+            print(f"(goal started at {goal['started']}, "
+                f"hours per day: {goal['last_hours_per_day']}, "
+                f"worked today {goal['total_worked_today']}, "
+                f"total {goal['total_worked']})")
 
     def do_worked(self, line):
         params = shlex.split(line)
@@ -179,4 +255,9 @@ class ZudilnikCmd(cmd.Cmd):
 
 deadline=dttime(7, 15) # 07:15 AM
 zudcmd = ZudilnikCmd(Zudilnik(deadline))
-runcmd_uninterrupted(zudcmd)
+
+if len(sys.argv) >= 2:
+    (script_name, *params) = sys.argv
+    zudcmd.onecmd(" ".join(params))
+else:
+    runcmd_uninterrupted(zudcmd)
