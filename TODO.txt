@@ -45,6 +45,16 @@ X in restart command comment is a second argument
 * implemented the single command (from argv) execution mode for cmdrun
 
 -----------------------------------------------------------------------------
+2022.04.19
+
+* make <TAB> work for autocompletion of "project" parameter of "start" command
+  * create complete_start function
+  * determine parameter's order number
+  * if it's 1st parameter (project) search for "<text>%" project name in db
+  * otherwise return empty list
+* + autocompletion for 'set' command
+
+-----------------------------------------------------------------------------
 TODO 
 
 * get rid of Zudilnik "comment_last_record" method at all

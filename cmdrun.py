@@ -50,12 +50,10 @@ class ZudilnikCmd(cmd.Cmd):
     def do_exit(self, line):
         return True
 
-    def complete_hline(self, text, line, begidx, endidx):
+    def complete_start(self, text, line, begidx, endidx):
         param_number = get_param_number(line)
-        if param_number == 1: # подсказываем 1-ый аргумент name
-            return matching_options(text, ['Yegor', 'Yulia', 'Eugene', 'Hish'])
-        elif param_number == 2: # подсказываем 2-ой аргумент word
-            return matching_options(text, ['common', 'heal', 'gore', 'less', 'wisdom', 'welcome', 'goodbye', 'kill'])
+        if param_number == 1:
+            return self.zud.find_projects(text)
         else:
             return []
 
@@ -116,11 +114,24 @@ class ZudilnikCmd(cmd.Cmd):
 
         vprint(f"Updated comment for record #{data['record_id']} started at {data['record_started_at']}")
 
+    set_fields = ['start', 'started', 'stop', 'stoped', 'project']
+
+    def complete_set(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line)
+
+        if param_number == 1 or param_number == 2 and params[0].isnumeric():
+            return matching_options(text, self.set_fields)
+        elif param_number == 2 and params[0] == 'project' \
+                or param_number == 3 and params[1] == 'project':
+            return self.zud.find_projects(text)
+        else:
+            return []
+
     def do_set(self, line):
         params = shlex.split(line)
 
-        fields = ['start', 'started', 'stop', 'stoped', 'project']
-        if len(params) >= 3 and params[1] in fields:
+        if len(params) >= 3 and params[1] in self.set_fields:
             record_id = params[0]
             field = params[1]
             value = params[2]
@@ -210,7 +221,9 @@ class ZudilnikCmd(cmd.Cmd):
         return self.do_newgoal(line)
 
     def do_newgoal(self, line):
-        (project_name, goal_name) = shlex.split(line)
+        params = shlex.split(line)
+        project_name = params[0]
+        goal_name = params[1]
         goal_type = params[2] if len(params) > 2 else 'hours_light'
         goal_id = self.zud.add_new_goal(project_name, goal_name, goal_type)
         vprint(f'Added goal "{goal_name}" #{goal_id}')
@@ -253,7 +266,7 @@ class ZudilnikCmd(cmd.Cmd):
         worked_time, from_dt, to_dt = self.zud.worked_on_goal2(goal_name, from_date, to_date)
         print(f"worked {worked_time} from {from_dt} to {to_dt} on {goal_name}")
 
-deadline=dttime(7, 15) # 07:15 AM
+deadline=dttime(6, 0) # 06:00 AM
 zudcmd = ZudilnikCmd(Zudilnik(deadline))
 
 if len(sys.argv) >= 2:

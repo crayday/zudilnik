@@ -72,10 +72,10 @@ class Zudilnik:
             subproject = self.get_project(subproject_name)
         else:
             self.cur.execute("""
-            SELECT s.id, s.name
-            FROM timelog t
-                JOIN subprojects s ON s.id = t.subproject_id
-            ORDER BY t.id DESC LIMIT 1
+                SELECT s.id, s.name
+                FROM timelog t
+                    JOIN subprojects s ON s.id = t.subproject_id
+                ORDER BY t.id DESC LIMIT 1
             """)
             subproject = self.cur.fetchone()
             if not subproject:
@@ -201,6 +201,16 @@ class Zudilnik:
         if not project:
             raise Exception("project "+project_name+" not found")
         return project
+
+    def find_projects(self, pattern):
+        self.cur.execute("""
+            SELECT name
+            FROM subprojects
+            WHERE name like ?
+        """, (pattern+'%',))
+        names = []
+        subprojects = self.cur.fetchall()
+        return [subproject["name"] for subproject in subprojects]
 
     def verify_record(self, record_id):
         self.cur.execute("""
