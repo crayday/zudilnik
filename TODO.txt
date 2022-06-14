@@ -55,8 +55,15 @@ X in restart command comment is a second argument
 * + autocompletion for 'set' command
 
 -----------------------------------------------------------------------------
+2022.06.14
+
+* fixed autocompletion to work properly when completing a not last argument
+
+-----------------------------------------------------------------------------
 TODO 
 
+* autocompletion for the "ls" command
+* autocompletion for the "hpd" command
 * get rid of Zudilnik "comment_last_record" method at all
   * in "comment_record" method rename record_id to smth like record_identificator
   * if record_identificator > 0 then all goes as it goes

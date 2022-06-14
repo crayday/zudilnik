@@ -6,11 +6,25 @@ import re
 from datetime import datetime, timedelta, time as dttime, date as dtdate
 from Zudilnik import Zudilnik
 
-def get_param_number(line):
-    (command, *params) = shlex.split(line)
-    param_number = len(params)
-    if re.search(r'\s$', line):
-        param_number+=1
+def get_param_number(line, begidx):
+    reading_word = False
+    found_param = False
+    param_number = -1 # Don't count command name as a parameter
+    for i, char in enumerate(line):
+        is_whitespace = re.search(r'\s', char)
+        if is_whitespace and reading_word:
+            reading_word = False
+        elif not is_whitespace and not reading_word:
+            reading_word = True
+            param_number += 1
+
+        if i == begidx:
+            found_param = True
+            break
+
+    if not found_param:
+        param_number += 1;
+
     return param_number
 
 def matching_options(text, options):
@@ -51,7 +65,7 @@ class ZudilnikCmd(cmd.Cmd):
         return True
 
     def complete_start(self, text, line, begidx, endidx):
-        param_number = get_param_number(line)
+        param_number = get_param_number(line, begidx)
         if param_number == 1:
             return self.zud.find_projects(text)
         else:
@@ -118,7 +132,7 @@ class ZudilnikCmd(cmd.Cmd):
 
     def complete_set(self, text, line, begidx, endidx):
         (command, *params) = shlex.split(line)
-        param_number = get_param_number(line)
+        param_number = get_param_number(line, begidx)
 
         if param_number == 1 or param_number == 2 and params[0].isnumeric():
             return matching_options(text, self.set_fields)
