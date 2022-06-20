@@ -202,6 +202,16 @@ class Zudilnik:
             raise Exception("project "+project_name+" not found")
         return project
 
+    def find_root_projects(self, pattern):
+        self.cur.execute("""
+            SELECT name
+            FROM projects
+            WHERE name like ?
+        """, (pattern+'%',))
+        names = []
+        projects = self.cur.fetchall()
+        return [project["name"] for project in projects]
+
     def find_projects(self, pattern):
         self.cur.execute("""
             SELECT name
@@ -211,6 +221,16 @@ class Zudilnik:
         names = []
         subprojects = self.cur.fetchall()
         return [subproject["name"] for subproject in subprojects]
+
+    def find_goals(self, pattern):
+        self.cur.execute("""
+            SELECT name
+            FROM goals
+            WHERE name like ?
+        """, (pattern+'%',))
+        names = []
+        goals = self.cur.fetchall()
+        return [goal["name"] for goal in goals]
 
     def verify_record(self, record_id):
         self.cur.execute("""

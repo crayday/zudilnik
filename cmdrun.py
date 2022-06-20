@@ -201,8 +201,19 @@ class ZudilnikCmd(cmd.Cmd):
         subproject_id = self.zud.add_new_subproject(project_name, subproject_name)
         vprint(f'Added subproject "{subproject_name}" #{subproject_id}')
 
+    def complete_ls(self, *args):
+        return self.complete_list(*args)
+
     def do_ls(self, line): # shortcut for list
         return self.do_list(line)
+
+    def complete_list(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_root_projects(text)
+        else:
+            return []
 
     def do_list(self, line):
         params = shlex.split(line)
@@ -242,10 +253,23 @@ class ZudilnikCmd(cmd.Cmd):
         goal_id = self.zud.add_new_goal(project_name, goal_name, goal_type)
         vprint(f'Added goal "{goal_name}" #{goal_id}')
 
+    def complete_hpd(self, *args):
+        return self.complete_hoursperday(*args)
+
     def do_hpd(self, line): # shortcut for hoursperday
+        """short for hoursperday"""
         return self.do_hoursperday(line)
 
+    def complete_hoursperday(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_goals(text)
+        else:
+            return []
+
     def do_hoursperday(self, line):
+        """hoursperday <goal_name> <hours> <from> <to> - commits to work on a goal for a given number of hours at a given days range. 1 is monday. 7 is sunday. if <to> day is omitted than commiting to work on a single given day."""
         params = shlex.split(line)
         goal_name = params[0]
         hours = params[1]
@@ -271,6 +295,14 @@ class ZudilnikCmd(cmd.Cmd):
                 f"hours per day: {goal['last_hours_per_day']}, "
                 f"worked today {goal['total_worked_today']}, "
                 f"total {goal['total_worked']})")
+
+    def complete_worked(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_goals(text)
+        else:
+            return []
 
     def do_worked(self, line):
         params = shlex.split(line)

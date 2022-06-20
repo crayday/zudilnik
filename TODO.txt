@@ -1,75 +1,13 @@
------------------------------------------------------------------------------
-2021.03.24
 
-X use cur.commit() in Zudilnik methods instead of parse_command()
-
------------------------------------------------------------------------------
-2021.04.11
-
-X command "worked" for calculating work hours on some goal or task
-X replaced some format() strings with f-strings
-
------------------------------------------------------------------------------
-2021.04.12
-
-X support short dates in "worked" command like "11" in april instead of "2021-04-11"
-
------------------------------------------------------------------------------
-2021.04.21
-
-X in restart command comment is a second argument
-
------------------------------------------------------------------------------
-2021.06.10
-
-* supported commands in a format "set project <PROJECT> <COMMENT>"
-
------------------------------------------------------------------------------
-2021.06.16
-
-* cmdrun: use cmd module for better command line experience
-* add "comment" command to new cmdrun
-* move commands start,restart,delete,set to cmdrun
-
------------------------------------------------------------------------------
-2021.06.17
-
-* add eval to commands executions (otherwise it shuts down on a single exception)
-* move "worked" command to cmdrun
-
------------------------------------------------------------------------------
-2021.06.19
-
-* moved all other commands to cmdrun
-* implemented shortcuts to command with do_SHORTCUT
-* implemented the single command (from argv) execution mode for cmdrun
-
------------------------------------------------------------------------------
-2022.04.19
-
-* make <TAB> work for autocompletion of "project" parameter of "start" command
-  * create complete_start function
-  * determine parameter's order number
-  * if it's 1st parameter (project) search for "<text>%" project name in db
-  * otherwise return empty list
-* + autocompletion for 'set' command
-
------------------------------------------------------------------------------
-2022.06.14
-
-* fixed autocompletion to work properly when completing a not last argument
-
------------------------------------------------------------------------------
 TODO 
-
-* autocompletion for the "ls" command
-* autocompletion for the "hpd" command
-* get rid of Zudilnik "comment_last_record" method at all
-  * in "comment_record" method rename record_id to smth like record_identificator
-  * if record_identificator > 0 then all goes as it goes
-  * if record_identificator <= 0 then we get record like last, penult, penpenult etc
+* get rid of Zudilnik "comment_last_record" method at all (cause there will
+  be not only "last", but many identifiers: "penult", "penpenult" etc)
+  * in the "comment_record" method rename record_id to smth like record_identifier
+  * if record_identifier > 0 then all goes as it goes
+  * if record_identifier <= 0 then we get record like last, penult, penpenult etc.
+    support both - name and negative number identifiers.
 * implement prelast (penult), preprelast (penpenult) etc.
-  (in commands like "set", "comment")
+  (in commands like "set", "comment", "del")
 * alternative command like "worked" but for projects/subprojects instead of goals
 * command for counting total duration of some subproject in an interval
   like "2020-02-19" for single day
