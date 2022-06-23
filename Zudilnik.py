@@ -4,10 +4,10 @@ import re
 import sqlite3
 
 class Zudilnik:
-    def __init__(self, deadline):
+    def __init__(self, deadline, dbpath):
         self.deadline = deadline # last sec. of commitment day before deadline
                                  # (NOT first sec. of day after deadline)
-        self.con = sqlite3.connect("db.sqlite3")
+        self.con = sqlite3.connect(dbpath)
         self.con.row_factory = sqlite3.Row
         self.cur = self.con.cursor()
 

@@ -45,12 +45,5 @@ TODO
 * ability to archive goals like this:
   > archivegoal lt2020
   archivegoal|ag <GOALNAME>
-* backup-db: add periodical_run.py to crontab (first run it each minute)
-* backup-db: in periodical_run.py write helloworld to log
-* backup-db: in periodical_run.py copypaste database to Dropbox
-* backup-db: read backup path from config file
 * countable goals
-* day deadline
 * add 'apply when' functionality to 'hoursperday' command
-* deny immediate goal reduction
-* get absolute path to database (to be able to run script outside of it's parent directory)

@@ -69,3 +69,9 @@ X in restart command comment is a second argument
 
 * autocompletion for the "worked" command
 * autocompletion for the "hpd" command
+
+-----------------------------------------------------------------------------
+2022.06.23
+
+* get absolute path to database (to be able to run script outside of it's parent directory)
+* move the database to Dropbox (any cloud service) to store it safely
