@@ -33,6 +33,9 @@ def cmd_prompt():
 def vprint(string): # verbose print
     print(f"{datetime.now().strftime('%H:%M')}: {string}")
 
+def is_record_identifier(param):
+    return re.fullmatch(r'(-?\d+|last|(pen)+ult)', param)
+
 class ZudilnikCmd(cmd.Cmd):
     prompt = cmd_prompt()
 
@@ -95,10 +98,7 @@ class ZudilnikCmd(cmd.Cmd):
     def do_delete(self, line):
         params = shlex.split(line)
         record_id = params[0]
-        if record_id == 'last':
-            data = self.zud.delete_last_record()
-        else:
-            data = self.zud.delete_record(int(record_id))
+        data = self.zud.delete_record(record_id)
         vprint(f"Deleted record #{data['record_id']}")
 
     def do_comment(self, line):
@@ -111,10 +111,7 @@ class ZudilnikCmd(cmd.Cmd):
             record_id = 'last'
             comment = params[0]
 
-        if record_id == 'last':
-            data = self.zud.comment_last_record(comment)
-        else:
-            data = self.zud.comment_record(record_id, comment)
+        data = self.zud.comment_record(record_id, comment)
 
         vprint(f"Updated comment for record #{data['record_id']} started at {data['record_started_at']}")
 
@@ -124,7 +121,7 @@ class ZudilnikCmd(cmd.Cmd):
         (command, *params) = shlex.split(line)
         param_number = get_param_number(line, begidx)
 
-        if param_number == 1 or param_number == 2 and params[0].isnumeric():
+        if param_number == 1 or param_number == 2 and is_record_identifier(params[0]):
             return matching_options(text, self.set_fields)
         elif param_number == 2 and params[0] == 'project' \
                 or param_number == 3 and params[1] == 'project':
@@ -148,34 +145,23 @@ class ZudilnikCmd(cmd.Cmd):
 
         if field == 'started' or field == 'start':
             time_str = value
-            if record_id == 'last':
-                data = self.zud.set_last_record_start_time(time_str)
-            else:
-                data = self.zud.set_record_start_time(int(record_id), time_str)
+            data = self.zud.set_record_start_time(record_id, time_str)
             if data['duration']:
                 vprint(f"Updated record #{data['record_id']}, now started at {data['started_at']}, duration {data['duration']}")
             else:
                 vprint(f"Updated record #{data['record_id']}, now started at {data['started_at']}")
         elif field == 'stoped' or field == 'stop':
             time_str = value
-            if record_id == 'last':
-                data = self.zud.set_last_record_stop_time(time_str)
-            else:
-                data = self.zud.set_record_stop_time(int(record_id), time_str)
+            data = self.zud.set_record_stop_time(record_id, time_str)
             vprint(f"Updated record #{data['record_id']}, now stoped at {data['stoped_at']}, duration {data['duration']}")
         elif field == 'project':
             project_name = value
-            if record_id == 'last':
-                data = self.zud.set_last_record_project(project_name)
-            else:
-                data = self.zud.set_record_project(int(record_id), project_name)
+            data = self.zud.set_record_project(record_id, project_name)
             vprint(f"Updated project for record #{data['record_id']}")
         else:
             raise Exception("unknown field '"+field+"' to set")
 
-        if comment and record_id == 'last':
-            self.zud.comment_last_record(comment)
-        elif comment:
+        if comment:
             self.zud.comment_record(record_id, comment)
 
     def do_np(self, line): # shortcut for newproject

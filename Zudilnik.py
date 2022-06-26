@@ -36,10 +36,10 @@ class Zudilnik:
         self.con.commit()
         return subproject_id
 
-    def get_last_time_record(self):
+    def get_last_time_record(self, tail_number=1):
         self.cur.execute("""
-        SELECT * FROM timelog ORDER BY started_at DESC, id DESC LIMIT 1
-        """)
+        SELECT * FROM timelog ORDER BY started_at DESC, id DESC LIMIT 1 OFFSET ?
+        """, (tail_number-1,))
         return self.cur.fetchone()
 
     def stop_last_record(self, subproject_id_to_start=None, commit=True):
@@ -96,13 +96,8 @@ class Zudilnik:
             "subproject": subproject,
         }
 
-    def comment_last_record(self, comment):
-        last_time_record = self.get_last_time_record()
-        if not last_time_record:
-            raise Exception("No time records at all")
-        return self.comment_record(last_time_record['id'], comment)
-
-    def comment_record(self, record_id, comment):
+    def comment_record(self, record_identifier, comment):
+        record_id = self.get_record_id(record_identifier)
         record = self.verify_record(record_id)
         self.cur.execute("""
         UPDATE timelog SET comment = ? WHERE id = ?
@@ -114,13 +109,8 @@ class Zudilnik:
             'record_started_at': started_at_dt.strftime('%F %T'),
         }
 
-    def delete_last_record(self):
-        last_time_record = self.get_last_time_record()
-        if not last_time_record:
-            raise Exception("No time records at all")
-        return self.delete_record(last_time_record['id'])
-
-    def delete_record(self, record_id):
+    def delete_record(self, record_identifier):
+        record_id = self.get_record_id(record_identifier)
         self.verify_record(record_id)
         self.cur.execute("""
         DELETE FROM timelog WHERE id = ? 
@@ -130,13 +120,8 @@ class Zudilnik:
             'record_id': record_id,
         }
 
-    def set_last_record_start_time(self, time_str):
-        last_time_record = self.get_last_time_record()
-        if not last_time_record:
-            raise Exception("No time records at all")
-        return self.set_record_start_time(last_time_record['id'], time_str)
-
-    def set_record_start_time(self, record_id, time_str):
+    def set_record_start_time(self, record_identifier, time_str):
+        record_id = self.get_record_id(record_identifier)
         record = self.verify_record(record_id)
         started_at_dt = datetime_from_string(time_str)
         if started_at_dt and record['stoped_at']:
@@ -154,13 +139,8 @@ class Zudilnik:
             'duration': seconds_to_hms(duration) if duration else None,
         }
 
-    def set_last_record_stop_time(self, time_str):
-        last_time_record = self.get_last_time_record()
-        if not last_time_record:
-            raise Exception("No time records at all")
-        return self.set_record_stop_time(last_time_record['id'], time_str)
-
-    def set_record_stop_time(self, record_id, time_str):
+    def set_record_stop_time(self, record_identifier, time_str):
+        record_id = self.get_record_id(record_identifier)
         record = self.verify_record(record_id)
         stoped_at_dt = datetime_from_string(time_str)
         if record['started_at'] and stoped_at_dt:
@@ -178,13 +158,8 @@ class Zudilnik:
             'duration': seconds_to_hms(duration),
         }
 
-    def set_last_record_project(self, project_name):
-        last_time_record = self.get_last_time_record()
-        if not last_time_record:
-            raise Exception("No time records at all")
-        return self.set_record_project(last_time_record['id'], project_name)
-
-    def set_record_project(self, record_id, project_name):
+    def set_record_project(self, record_identifier, project_name):
+        record_id = self.get_record_id(record_identifier)
         self.verify_record(record_id)
         project = self.get_project(project_name)
         self.cur.execute("""
@@ -547,6 +522,26 @@ class Zudilnik:
                 JOIN subprojects sp ON sp.project_id = p.id
             WHERE p.name = ?
         """, (project_name,)).fetchall()
+
+    def get_record_id(self, record_identifier):
+        tail_number = None
+        if re.fullmatch(r'((pen)+)ult', record_identifier):
+            matches = re.findall(r'pen', record_identifier)
+            tail_number = 1+len(matches)
+        elif record_identifier == 'last':
+            tail_number = 1
+        elif re.fullmatch(r'-\d+', record_identifier):
+            tail_number = abs(int(record_identifier))
+
+        if tail_number:
+            record = self.get_last_time_record(tail_number)
+            if not record:
+                raise Exception("No time records at all")
+            record_id = record['id']
+        else:
+            record_id = int(record_identifier)
+
+        return record_id
 
 ########################### supplementary functions ###########################
 def seconds_to_hms(seconds):

@@ -9,7 +9,7 @@ def runcmd_uninterrupted(cmdobj):
     try:
         cmdobj.cmdloop()
     except Exception as e:
-        vprint("Error: "+str(e))
+        print("Error: "+str(e))
         runcmd_uninterrupted(cmdobj)
 
 deadline = dttime(6, 0) # 06:00 AM
