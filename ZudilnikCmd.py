@@ -36,6 +36,19 @@ def vprint(string): # verbose print
 def is_record_identifier(param):
     return re.fullmatch(r'(-?\d+|last|(pen)+ult)', param)
 
+def matching_last_penult(text):
+    if len(text) == 0:
+        return ["last", "penult"]
+    if "last".startswith(text):
+        return ["last"]
+    m = re.fullmatch(r'((pen)*)pe?n?', text)
+    if m:
+        return [m.group(1)+"penult", m.group(1)+"penpenult"]
+    m = re.fullmatch(r'((pen)*)ul?t?', text)
+    if m:
+        return [m.group(1)+"ult"]
+    return []
+
 class ZudilnikCmd(cmd.Cmd):
     prompt = cmd_prompt()
 
@@ -92,14 +105,27 @@ class ZudilnikCmd(cmd.Cmd):
         if stoped_data:
             vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
 
+    def complete_del(self, *args):
+        return self.complete_delete(*args)
+
     def do_del(self, line): # shortcut for delete
         return self.do_delete(line)
 
+    def complete_delete(self, text, line, begidx, endidx):
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return matching_last_penult(text)
+    
     def do_delete(self, line):
         params = shlex.split(line)
         record_id = params[0]
         data = self.zud.delete_record(record_id)
         vprint(f"Deleted record #{data['record_id']}")
+
+    def complete_comment(self, text, line, begidx, endidx):
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return matching_last_penult(text)
 
     def do_comment(self, line):
         """comment <text> | comment <record_id> <text> - comments a given record or the last record if not specified"""
@@ -122,7 +148,11 @@ class ZudilnikCmd(cmd.Cmd):
         param_number = get_param_number(line, begidx)
 
         if param_number == 1 or param_number == 2 and is_record_identifier(params[0]):
-            return matching_options(text, self.set_fields)
+            options = matching_options(text, self.set_fields)
+            if param_number == 1 and len(options) == 0:
+                return matching_last_penult(text)
+            else:
+                return options
         elif param_number == 2 and params[0] == 'project' \
                 or param_number == 3 and params[1] == 'project':
             return self.zud.find_projects(text)
@@ -171,6 +201,14 @@ class ZudilnikCmd(cmd.Cmd):
         (project_name) = shlex.split(line)
         project_id = self.zud.add_new_project(project_name)
         vprint(f'Added project "{project_name}" #{project_id}')
+
+    def complete_new(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_root_projects(text)
+        else:
+            return []
     
     def do_new(self, line):
         (project_name, subproject_name) = shlex.split(line)
@@ -218,8 +256,19 @@ class ZudilnikCmd(cmd.Cmd):
                       f"{row['comment']} ({row['duration']})")
             print('')
 
+    def complete_ng(self, *args):
+        return self.complete_newgoal(*args)
+
     def do_ng(self, line): # shortcut for newgoal
         return self.do_newgoal(line)
+
+    def complete_newgoal(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_root_projects(text)
+        else:
+            return []
 
     def do_newgoal(self, line):
         params = shlex.split(line)

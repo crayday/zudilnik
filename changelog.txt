@@ -86,3 +86,9 @@ X in restart command comment is a second argument
 
 * implemented prelast (penult), preprelast (penpenult) etc.
   (in commands like "set", "comment", "del")
+
+-----------------------------------------------------------------------------
+2022.06.27
+
+* autocomplete for last/penult/penpenult parameters
+* autocomplete for new and newgoal commands
