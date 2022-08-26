@@ -271,12 +271,48 @@ class ZudilnikCmd(cmd.Cmd):
             return []
 
     def do_newgoal(self, line):
+        """newgoal <project_name> <goal_name> <goal_type> - creates new goal to work on a given project. goal_type maybe hours_light (default) or hours_mandatory."""
         params = shlex.split(line)
         project_name = params[0]
         goal_name = params[1]
         goal_type = params[2] if len(params) > 2 else 'hours_light'
         goal_id = self.zud.add_new_goal(project_name, goal_name, goal_type)
         vprint(f'Added goal "{goal_name}" #{goal_id}')
+
+    def complete_setgoal(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_goals(text)
+        elif param_number == 2:
+            return matching_options(text, ['type'])
+        elif param_number == 3:
+            return matching_options(text, ['hours_light', 'hours_mandatory'])
+        else:
+            return []
+
+    def do_setgoal(self, line):
+        """setgoal <goal_name> type (hours_light|hours_mandatory)"""
+        params = shlex.split(line)
+        goal_name = params[0]
+        field = params[1]
+        value = params[2]
+        if field == 'type':
+            self.zud.set_goal_type(goal_name, value)
+
+    def complete_archivegoal(self, text, line, begidx, endidx):
+        (command, *params) = shlex.split(line)
+        param_number = get_param_number(line, begidx)
+        if param_number == 1:
+            return self.zud.find_goals(text)
+        else:
+            return []
+
+    def do_archivegoal(self, line):
+        """archivegoal <goal_name>"""
+        params = shlex.split(line)
+        goal_name = params[0]
+        self.zud.archive_goal(goal_name)
 
     def complete_hpd(self, *args):
         return self.complete_hoursperday(*args)
@@ -294,7 +330,7 @@ class ZudilnikCmd(cmd.Cmd):
             return []
 
     def do_hoursperday(self, line):
-        """hoursperday <goal_name> <hours> <from> <to> - commits to work on a goal for a given number of hours at a given days range. 1 is monday. 7 is sunday. if <to> day is omitted than commiting to work on a single given day."""
+        """hoursperday <goal_name> <hours> <from>-<to> - commits to work on a goal for a given number of hours at a given days range. 1 is monday. 7 is sunday. if <to> day is omitted than commiting to work on a single given day."""
         params = shlex.split(line)
         goal_name = params[0]
         hours = params[1]
@@ -336,3 +372,15 @@ class ZudilnikCmd(cmd.Cmd):
         to_date = params[2] if len(params) >= 3 else from_date
         worked_time, from_dt, to_dt = self.zud.worked_on_goal2(goal_name, from_date, to_date)
         print(f"worked {worked_time} from {from_dt} to {to_dt} on {goal_name}")
+
+    def do_wp(self, *params):
+        return self.do_workedproject(*params)
+
+    def do_workedproject(self, line):
+        params = shlex.split(line)
+        project_name = params[0]
+        from_date = params[1]
+        to_date = params[2] if len(params) >= 3 else from_date
+        # FIXME TODO worked_on_project instead of worked_on_goal2
+        worked_time, from_dt, to_dt = self.zud.worked_on_goal2(project_name, from_date, to_date)
+        print(f"worked {worked_time} from {from_dt} to {to_dt} on {project_name}")

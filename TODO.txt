@@ -1,7 +1,6 @@
 
 TODO 
-* autocomplete for last/penult/penpenult parameters
-* alternative command like "worked" but for projects/subprojects instead of goals
+* workedproject (wp): alternative command like "worked" but for projects/subprojects instead of goals
 * command for counting total duration of some subproject in an interval
   like "2020-02-19" for single day
   or "2020-02-12 2020-02-19" for week
@@ -35,8 +34,5 @@ TODO
     | where sp.project_id = 1
     |   and t.id is null
     | group by sp.id;
-* ability to archive goals like this:
-  > archivegoal lt2020
-  archivegoal|ag <GOALNAME>
 * countable goals
 * add 'apply when' functionality to 'hoursperday' command

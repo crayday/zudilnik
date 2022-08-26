@@ -92,3 +92,11 @@ X in restart command comment is a second argument
 
 * autocomplete for last/penult/penpenult parameters
 * autocomplete for new and newgoal commands
+
+-----------------------------------------------------------------------------
+2022-08-26
+
+* ability to change goal types
+  > setgoal <GOALNAME> type (hours_light|hours_mandatory)
+* ability to archive goals like this:
+  > archivegoal <GOALNAME>

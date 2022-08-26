@@ -243,6 +243,18 @@ class Zudilnik:
         self.con.commit()
         return goal_id
 
+    def set_goal_type(self, goal_name, goal_type):
+        self.cur.execute("""
+            UPDATE goals SET type = ? WHERE name = ?
+        """, (goal_type, goal_name))
+        self.con.commit()
+
+    def archive_goal(self, goal_name):
+        self.cur.execute("""
+            UPDATE goals SET archived_at = STRFTIME('%s','now') WHERE name = ?
+        """, (goal_name,))
+        self.con.commit()
+
     def get_commitment_date(self, dt):
         commitment_date = dt.date()
         if self.is_deadline_before_noon():
