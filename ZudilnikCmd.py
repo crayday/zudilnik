@@ -267,6 +267,8 @@ class ZudilnikCmd(cmd.Cmd):
         param_number = get_param_number(line, begidx)
         if param_number == 1:
             return self.zud.find_root_projects(text)
+        elif param_number == 3:
+            return matching_options(text, ['hours_light', 'hours_mandatory'])
         else:
             return []
 
