@@ -353,14 +353,7 @@ class Zudilnik:
         goal = self.cur.fetchone()
         if not goal:
             raise Exception(f"goal '{goal_name}' not found")
-        pass
-
-        from_dt = date_from_string(from_date, self.deadline)
-        if to_date:
-            to_dt = date_from_string(to_date, self.deadline) + timedelta(days=1)
-        else:
-            to_dt = from_dt + timedelta(days=1)
-
+        from_dt, to_dt = dates_range_from_strings(from_date, to_date, self.deadline)
         seconds_worked = self.worked_on_goal(goal, from_dt, to_dt)
         return seconds_to_hms(seconds_worked), from_dt, to_dt
 
@@ -374,6 +367,16 @@ class Zudilnik:
             """, (goal['project_id'],))
             subproject_ids = [row['id'] for row in self.cur]
 
+        return self.worked_on_subprojects(subproject_ids, from_dt, to_dt, calculate_last_day)
+
+    def worked_on_project(self, project_name, from_date, to_date=None):
+        project = self.get_project(project_name)
+        subproject_ids = [ project['id'] ]
+        from_dt, to_dt = dates_range_from_strings(from_date, to_date, self.deadline)
+        seconds_worked = self.worked_on_subprojects(subproject_ids, from_dt, to_dt)
+        return seconds_to_hms(seconds_worked), from_dt, to_dt
+
+    def worked_on_subprojects(self, subproject_ids, from_dt, to_dt, calculate_last_day = False):
         startofday_dt = to_dt - timedelta(days=1)
 
         # calculate how much hours worked
@@ -609,3 +612,11 @@ def date_from_string(date_str, default_time=None):
             minute = default_time.minute,
             second = default_time.second)
     raise Exception(f"Doesn't support date string '{date_str}'")
+
+def dates_range_from_strings(from_date, to_date, default_time=None):
+    from_dt = date_from_string(from_date, default_time)
+    if to_date:
+        to_dt = date_from_string(to_date, default_time) + timedelta(days=1)
+    else:
+        to_dt = from_dt + timedelta(days=1)
+    return from_dt, to_dt

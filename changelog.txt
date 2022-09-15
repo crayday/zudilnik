@@ -100,3 +100,8 @@ X in restart command comment is a second argument
   > setgoal <GOALNAME> type (hours_light|hours_mandatory)
 * ability to archive goals like this:
   > archivegoal <GOALNAME>
+
+-----------------------------------------------------------------------------
+2022-09-15
+
+* workedproject (wp): alternative command like "worked" but for subprojects instead of goals

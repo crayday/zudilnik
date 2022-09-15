@@ -383,6 +383,5 @@ class ZudilnikCmd(cmd.Cmd):
         project_name = params[0]
         from_date = params[1]
         to_date = params[2] if len(params) >= 3 else from_date
-        # FIXME TODO worked_on_project instead of worked_on_goal2
-        worked_time, from_dt, to_dt = self.zud.worked_on_goal2(project_name, from_date, to_date)
+        worked_time, from_dt, to_dt = self.zud.worked_on_project(project_name, from_date, to_date)
         print(f"worked {worked_time} from {from_dt} to {to_dt} on {project_name}")

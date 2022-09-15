@@ -1,14 +1,8 @@
 
 TODO 
-* workedproject (wp): alternative command like "worked" but for projects/subprojects instead of goals
-* command for counting total duration of some subproject in an interval
-  like "2020-02-19" for single day
-  or "2020-02-12 2020-02-19" for week
-  or "2020-02" for month
-  E.g.:
-  select sum(duration)/3600.0 from timelog where subproject_id in (select id from subprojects where project_id = (select id from projects where name = "litres")) and started_at between strftime('%s',"2020-08-18 07:15:00+03:00") and strftime('%s',"2020-08-19 07:15:00+03:00");
-  ***
-  select sum(duration)/3600.0 from timelog where subproject_id = (select id from subprojects where name = "d20prog") and started_at between strftime('%s',"2021-06-23 00:00:00+03:00") and strftime('%s',"2021-06-24 00:00:00+03:00");
+* develop the workedproject command to work with projects too (currently works only with subprojects)
+* add autocompletion and help for workedproject command
+* if date is omitted in worked* commands use current date
 * command that will print every project that was working on during a given period of time
   and time spent on it
 * in the 'goalinfo' command output data about how much worked this week
