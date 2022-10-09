@@ -197,6 +197,14 @@ class Zudilnik:
         subprojects = self.cur.fetchall()
         return [subproject["name"] for subproject in subprojects]
 
+    def find_projects2(self, pattern):
+        subprojects = self.find_projects(pattern)
+        if not subprojects:
+            return self.find_root_projects(pattern)
+        else:
+            return subprojects
+
+
     def find_goals(self, pattern):
         self.cur.execute("""
             SELECT name
@@ -370,8 +378,13 @@ class Zudilnik:
         return self.worked_on_subprojects(subproject_ids, from_dt, to_dt, calculate_last_day)
 
     def worked_on_project(self, project_name, from_date, to_date=None):
-        project = self.get_project(project_name)
-        subproject_ids = [ project['id'] ]
+        try:
+            project = self.get_project(project_name)
+            subproject_ids = [ project['id'] ]
+        except (Exception):
+            projects = self.get_subprojects(project_name)
+            subproject_ids = [row['id'] for row in projects]
+            
         from_dt, to_dt = dates_range_from_strings(from_date, to_date, self.deadline)
         seconds_worked = self.worked_on_subprojects(subproject_ids, from_dt, to_dt)
         return seconds_to_hms(seconds_worked), from_dt, to_dt

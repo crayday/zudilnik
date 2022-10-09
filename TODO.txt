@@ -1,7 +1,5 @@
 
 TODO 
-* develop the workedproject command to work with projects too (currently works only with subprojects)
-* add autocompletion and help for workedproject command
 * if date is omitted in worked* commands use current date
 * command that will print every project that was working on during a given period of time
   and time spent on it

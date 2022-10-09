@@ -360,7 +360,6 @@ class ZudilnikCmd(cmd.Cmd):
                 f"total {goal['total_worked']})")
 
     def complete_worked(self, text, line, begidx, endidx):
-        (command, *params) = shlex.split(line)
         param_number = get_param_number(line, begidx)
         if param_number == 1:
             return self.zud.find_goals(text)
@@ -375,10 +374,22 @@ class ZudilnikCmd(cmd.Cmd):
         worked_time, from_dt, to_dt = self.zud.worked_on_goal2(goal_name, from_date, to_date)
         print(f"worked {worked_time} from {from_dt} to {to_dt} on {goal_name}")
 
+    def complete_wp(self, *args):
+        return self.complete_workedproject(*args)
+
     def do_wp(self, *params):
+        """short for workedproject"""
         return self.do_workedproject(*params)
 
+    def complete_workedproject(self, text, line, begidx, endidx):
+        param_number = get_param_number(line, begidx)
+        if param_number == 1: # project_name
+            return self.zud.find_projects2(text)
+        else:
+            return []
+
     def do_workedproject(self, line):
+        """workedproject <project> <from> <to> - how much time worked on project named <project> from date <from> and to date <to>. Date can be in form YYYY-MM-DD or MM-DD or DD. One digit day or month can be used too. Separator can be any."""
         params = shlex.split(line)
         project_name = params[0]
         from_date = params[1]
