@@ -79,26 +79,26 @@ class ZudilnikCmd(cmd.Cmd):
 
     def do_start(self, line):
         params = shlex.split(line)
-        subproject_name = params[0] if len(params) >= 1 else None
+        project_name = params[0] if len(params) >= 1 else None
         comment = params[1] if len(params) >= 2 else None
 
-        result = self.zud.start_subproject(subproject_name, comment=comment)
+        result = self.zud.start_project(project_name, comment=comment)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
             vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
 
-        vprint(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
+        vprint(f"Started project #{result['project']['id']} {result['project']['name']}")
 
     def do_restart(self, line):
         params = shlex.split(line)
         comment = params[0] if len(params) >= 1 else None
 
-        result = self.zud.start_subproject(None, comment=comment, restart_anyway=True)
+        result = self.zud.start_project(None, comment=comment, restart_anyway=True)
         if result and result['stoped_last_record']:
             stoped_data = result['stoped_last_record']
             vprint(f"Stoped record #{stoped_data['last_record_id']} started at {stoped_data['started_at']}, duration {stoped_data['duration']}")
 
-        vprint(f"Started subproject #{result['subproject']['id']} {result['subproject']['name']}")
+        vprint(f"Started project #{result['project']['id']} {result['project']['name']}")
 
     def do_stop(self, line):
         stoped_data = self.zud.stop_last_record()
@@ -237,14 +237,16 @@ class ZudilnikCmd(cmd.Cmd):
             projects = self.zud.get_subprojects(project_name)
         else:
             # no project given - need to list all projects
-            projects = self.zud.get_projects()
+            projects = self.zud.get_root_projects()
         for project in projects:
             vprint(f"#{project['id']} {project['name']}")
 
     def do_tl(self, line): # shortcut for timelog
+        """Short for timelog"""
         return self.do_timelog(line)
     
     def do_timelog(self, line):
+        """timelog <limit> - extract <limit> number of rows (12 by default)"""
         params = shlex.split(line)
         limit = params[0] if len(params) >= 1 else 12
         timelog = self.zud.get_timelog(limit)
@@ -252,7 +254,7 @@ class ZudilnikCmd(cmd.Cmd):
             print(day)
             for row in timelog[day]:
                 print(f"#{row['id']} {row['started_at']}-{row['stoped_at']}: "+
-                      f"[{row['project']}/{row['subproject']}] - "+
+                      f"[{row['project']}] - "+
                       f"{row['comment']} ({row['duration']})")
             print('')
 
@@ -384,7 +386,7 @@ class ZudilnikCmd(cmd.Cmd):
     def complete_workedproject(self, text, line, begidx, endidx):
         param_number = get_param_number(line, begidx)
         if param_number == 1: # project_name
-            return self.zud.find_projects2(text)
+            return self.zud.find_projects(text)
         else:
             return []
 

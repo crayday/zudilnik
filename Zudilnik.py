@@ -3,6 +3,8 @@ from time import time
 import re
 import sqlite3
 
+user_id = 1 # Right now we have only one user
+
 class Zudilnik:
     def __init__(self, deadline, dbpath):
         self.deadline = deadline # last sec. of commitment day before deadline
@@ -16,8 +18,8 @@ class Zudilnik:
 
     def add_new_project(self, project_name):
         self.cur.execute("""
-        INSERT INTO projects (name, created_at) VALUES (?,?)
-        """, (project_name, int(time())))
+        INSERT INTO projects (name, user_id, created_at) VALUES (?,?,?)
+        """, (project_name, user_id, int(time())))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (project_id,) = self.cur.fetchone()
         self.con.commit()
@@ -29,8 +31,8 @@ class Zudilnik:
         if not project:
             raise Exception("project "+project_name+" not found")
         self.cur.execute("""
-        INSERT INTO subprojects (project_id, name, created_at) VALUES (?,?,?)
-        """, (project['id'], subproject_name, int(time())))
+        INSERT INTO projects (parent_id, user_id, name, created_at) VALUES (?,?,?,?)
+        """, (project['id'], user_id, subproject_name, int(time())))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (subproject_id,) = self.cur.fetchone()
         self.con.commit()
@@ -38,17 +40,21 @@ class Zudilnik:
 
     def get_last_time_record(self, tail_number=1):
         self.cur.execute("""
-        SELECT * FROM timelog ORDER BY started_at DESC, id DESC LIMIT 1 OFFSET ?
-        """, (tail_number-1,))
+            SELECT *
+            FROM timelog
+                WHERE user_id = ?
+            ORDER BY started_at DESC, id DESC
+            LIMIT 1 OFFSET ?
+        """, (user_id, tail_number-1))
         return self.cur.fetchone()
 
-    def stop_last_record(self, subproject_id_to_start=None, commit=True):
+    def stop_last_record(self, project_id_to_start=None, commit=True):
         last_time_record = self.get_last_time_record()
 
         # check if last time record was stopped. If not - stop it
         if last_time_record and not last_time_record['stoped_at']:
-            if subproject_id_to_start and last_time_record['subproject_id'] == subproject_id_to_start:
-                raise Exception("subproject #{} already started".format(subproject_id_to_start))
+            if project_id_to_start and last_time_record['project_id'] == project_id_to_start:
+                raise Exception("project #{} already started".format(project_id_to_start))
             now = int(time())
             started_at_dt = datetime.fromtimestamp(last_time_record['started_at'])
             duration = now - last_time_record['started_at']
@@ -66,34 +72,34 @@ class Zudilnik:
         else:
             return None
     
-    def start_subproject(self, subproject_name=None, comment=None, restart_anyway=False):
-        # fist find subproject to start
-        if subproject_name:
-            subproject = self.get_project(subproject_name)
+    def start_project(self, project_name=None, comment=None, restart_anyway=False):
+        # fist find project to start
+        if project_name:
+            project = self.get_project(project_name)
         else:
             self.cur.execute("""
                 SELECT s.id, s.name
                 FROM timelog t
-                    JOIN subprojects s ON s.id = t.subproject_id
+                    JOIN projects s ON s.id = t.project_id
                 ORDER BY t.id DESC LIMIT 1
             """)
-            subproject = self.cur.fetchone()
-            if not subproject:
-                raise Exception("No subprojects with timelog records at all")
+            project = self.cur.fetchone()
+            if not project:
+                raise Exception("No projects with timelog records at all")
 
-        dont_stop_subproject_id = None if restart_anyway else subproject['id']
-        stoped_data = self.stop_last_record(dont_stop_subproject_id, commit=False)
+        dont_stop_project_id = None if restart_anyway else project['id']
+        stoped_data = self.stop_last_record(dont_stop_project_id, commit=False)
 
         # now insert new record
         self.cur.execute("""
-            INSERT INTO timelog (subproject_id, started_at, comment)
-            VALUES (?, ?, ?)
-        """, (subproject['id'], int(time()), comment))
+            INSERT INTO timelog (user_id, project_id, started_at, comment)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, project['id'], int(time()), comment))
         self.con.commit()
 
         return {
             "stoped_last_record": stoped_data,
-            "subproject": subproject,
+            "project": project,
         }
 
     def comment_record(self, record_identifier, comment):
@@ -163,7 +169,7 @@ class Zudilnik:
         self.verify_record(record_id)
         project = self.get_project(project_name)
         self.cur.execute("""
-        UPDATE timelog SET subproject_id = ? WHERE id = ? 
+        UPDATE timelog SET project_id = ? WHERE id = ? 
         """, (project['id'], record_id))
         self.con.commit()
         return {
@@ -171,7 +177,9 @@ class Zudilnik:
         }
 
     def get_project(self, project_name):
-        self.cur.execute('SELECT * FROM subprojects WHERE name = ?', (project_name,))
+        self.cur.execute("""
+            SELECT * FROM projects WHERE user_id = ? AND name = ? 
+        """, (user_id, project_name))
         project = self.cur.fetchone()
         if not project:
             raise Exception("project "+project_name+" not found")
@@ -182,7 +190,9 @@ class Zudilnik:
             SELECT name
             FROM projects
             WHERE name like ?
-        """, (pattern+'%',))
+                AND parent_id IS NULL
+                AND user_id = ?
+        """, (pattern+'%', user_id))
         names = []
         projects = self.cur.fetchall()
         return [project["name"] for project in projects]
@@ -190,27 +200,21 @@ class Zudilnik:
     def find_projects(self, pattern):
         self.cur.execute("""
             SELECT name
-            FROM subprojects
+            FROM projects
             WHERE name like ?
-        """, (pattern+'%',))
+                AND user_id = ?
+        """, (pattern+'%', user_id))
         names = []
-        subprojects = self.cur.fetchall()
-        return [subproject["name"] for subproject in subprojects]
-
-    def find_projects2(self, pattern):
-        subprojects = self.find_projects(pattern)
-        if not subprojects:
-            return self.find_root_projects(pattern)
-        else:
-            return subprojects
-
+        projects = self.cur.fetchall()
+        return [project["name"] for project in projects]
 
     def find_goals(self, pattern):
         self.cur.execute("""
             SELECT name
             FROM goals
             WHERE name like ?
-        """, (pattern+'%',))
+                AND user_id = ?
+        """, (pattern+'%', user_id))
         names = []
         goals = self.cur.fetchall()
         return [goal["name"] for goal in goals]
@@ -225,27 +229,11 @@ class Zudilnik:
         return record
 
     def add_new_goal(self, project_name, goal_name, goal_type='hours_light'):
-        # first try to search for subproject with given name
+        project = self.get_project(project_name)
         self.cur.execute("""
-            SELECT id, project_id FROM subprojects WHERE name = ? 
-        """, (project_name,))
-        subproject = self.cur.fetchone()
-        if subproject:
-            project_id = subproject['project_id']
-            subproject_id = subproject['id']
-        else:
-            # next try to search for project with given name
-            self.cur.execute('SELECT id FROM projects WHERE name = ?', (project_name,))
-            project = self.cur.fetchone()
-            if project:
-                project_id = project['id']
-                subproject_id = None
-            else:
-                raise Exception("project {} not found".format(project_name))
-        self.cur.execute("""
-            INSERT INTO goals (project_id, subproject_id, name, type, created_at)
+            INSERT INTO goals (user_id, project_id, name, type, created_at)
             VALUES (?,?,?,?,STRFTIME('%s','now'))
-        """, (project_id, subproject_id, goal_name, goal_type))
+        """, (user_id, project['id'], goal_name, goal_type))
         self.cur.execute('SELECT LAST_INSERT_ROWID()')
         (goal_id,) = self.cur.fetchone()
         self.con.commit()
@@ -253,14 +241,14 @@ class Zudilnik:
 
     def set_goal_type(self, goal_name, goal_type):
         self.cur.execute("""
-            UPDATE goals SET type = ? WHERE name = ?
-        """, (goal_type, goal_name))
+            UPDATE goals SET type = ? WHERE user_id = ? AND name = ?
+        """, (goal_type, user_id, goal_name))
         self.con.commit()
 
     def archive_goal(self, goal_name):
         self.cur.execute("""
-            UPDATE goals SET archived_at = STRFTIME('%s','now') WHERE name = ?
-        """, (goal_name,))
+            UPDATE goals SET archived_at = STRFTIME('%s','now') WHERE user_id = ? AND name = ?
+        """, (user_id, goal_name))
         self.con.commit()
 
     def get_commitment_date(self, dt):
@@ -365,31 +353,35 @@ class Zudilnik:
         seconds_worked = self.worked_on_goal(goal, from_dt, to_dt)
         return seconds_to_hms(seconds_worked), from_dt, to_dt
 
-    def worked_on_goal(self, goal, from_dt, to_dt, calculate_last_day = False):
-        # get list of goal's subprojects
-        if goal['subproject_id']:
-            subproject_ids = [goal['subproject_id']]
-        else:
-            self.cur.execute("""
-                SELECT id FROM subprojects WHERE project_id = ?
-            """, (goal['project_id'],))
-            subproject_ids = [row['id'] for row in self.cur]
+    def project_and_subprojects_ids(self, project_id):
+        project_ids = [ project_id ]
+        project_ids.extend(self.subprojects_ids(project_ids))
+        return project_ids
 
-        return self.worked_on_subprojects(subproject_ids, from_dt, to_dt, calculate_last_day)
+    def subprojects_ids(self, project_ids):
+        self.cur.execute(f"""
+            SELECT id FROM projects WHERE parent_id IN ({','.join(('?' for _ in project_ids))})
+        """, project_ids)
+        subprojects_ids = [project['id'] for project in self.cur.fetchall()]
+        if subprojects_ids:
+            return subprojects_ids + self.subprojects_ids(subprojects_ids)
+        else:
+            return []
+
+    def worked_on_goal(self, goal, from_dt, to_dt, calculate_last_day = False):
+        # get list of goal's projects
+        #import pudb; pudb.set_trace() # FIXME
+        project_ids = self.project_and_subprojects_ids(goal['project_id'])
+        return self.worked_on_projects(project_ids, from_dt, to_dt, calculate_last_day)
 
     def worked_on_project(self, project_name, from_date, to_date=None):
-        try:
-            project = self.get_project(project_name)
-            subproject_ids = [ project['id'] ]
-        except (Exception):
-            projects = self.get_subprojects(project_name)
-            subproject_ids = [row['id'] for row in projects]
-            
+        project = self.get_project(project_name)
+        project_ids = self.project_and_subprojects_ids(project['id'])
         from_dt, to_dt = dates_range_from_strings(from_date, to_date, self.deadline)
-        seconds_worked = self.worked_on_subprojects(subproject_ids, from_dt, to_dt)
+        seconds_worked = self.worked_on_projects(project_ids, from_dt, to_dt)
         return seconds_to_hms(seconds_worked), from_dt, to_dt
 
-    def worked_on_subprojects(self, subproject_ids, from_dt, to_dt, calculate_last_day = False):
+    def worked_on_projects(self, project_ids, from_dt, to_dt, calculate_last_day = False):
         startofday_dt = to_dt - timedelta(days=1)
 
         # calculate how much hours worked
@@ -401,15 +393,15 @@ class Zudilnik:
             select_worked_last_day = ""
 
         fields_str = ''.join([f+', ' for f in fields])
-        placeholder_str = ','.join(['?']*len(subproject_ids))
+        placeholder_str = ','.join(['?']*len(project_ids))
         self.cur.execute(f"""
             SELECT {fields_str}
                 SUM(duration) AS sum
             FROM timelog
-            WHERE subproject_id IN ({placeholder_str})
+            WHERE project_id IN ({placeholder_str})
                 AND started_at > ?
                 AND started_at <= ?
-        """, (*params, *subproject_ids, from_dt.timestamp(), to_dt.timestamp()))
+        """, (*params, *project_ids, from_dt.timestamp(), to_dt.timestamp()))
 
         worked_data = self.cur.fetchone()
         seconds_worked = worked_data['sum']
@@ -430,8 +422,9 @@ class Zudilnik:
         self.cur.execute("""
             SELECT id
             FROM goals
-            WHERE archived_at IS NULL
-        """)
+            WHERE user_id = ?
+                AND archived_at IS NULL
+        """, (user_id,))
         goals_info = []
         for goal in self.cur.fetchall():
             goal_info = self.get_goal_info(goal['id'])
@@ -507,10 +500,9 @@ class Zudilnik:
 
     def get_timelog(self, limit=10):
         self.cur.execute("""
-            SELECT tl.*, sp.name AS subproject_name, p.name AS project_name
+            SELECT tl.*, p.name AS project_name
             FROM timelog tl
-                JOIN subprojects sp ON sp.id = tl.subproject_id
-                JOIN projects p ON p.id = sp.project_id
+                JOIN projects p ON p.id = tl.project_id
             ORDER BY tl.started_at DESC, tl.id DESC
             LIMIT ?
         """, (limit,))
@@ -532,7 +524,6 @@ class Zudilnik:
             timelog[day].append({
                 "id": row['id'],
                 "project": row['project_name'],
-                "subproject": row['subproject_name'],
                 "started_at": started_at_dt.time().strftime("%H:%M"),
                 "stoped_at": stoped_at,
                 "duration": duration,
@@ -540,14 +531,16 @@ class Zudilnik:
             })
         return timelog
 
-    def get_projects(self):
-        return self.cur.execute("SELECT * FROM projects").fetchall()
+    def get_root_projects(self):
+        return self.cur.execute("""
+            SELECT * FROM projects WHERE user_id = ? AND parent_id IS NULL
+        """, (user_id,)).fetchall()
 
     def get_subprojects(self, project_name):
         return self.cur.execute("""
             SELECT sp.*
             FROM projects p
-                JOIN subprojects sp ON sp.project_id = p.id
+                JOIN projects sp ON sp.parent_id = p.id
             WHERE p.name = ?
         """, (project_name,)).fetchall()
 

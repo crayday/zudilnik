@@ -111,3 +111,8 @@ X in restart command comment is a second argument
 
 * develop the workedproject command to work with projects too (currently works only with subprojects)
 * add autocompletion and help for workedproject command
+
+-----------------------------------------------------------------------------
+2022-10-29
+
+* get rid of subprojects, leave only projects.

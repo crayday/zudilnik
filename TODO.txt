@@ -7,15 +7,6 @@ TODO
   (from monday), this month (from 1st day of month)
 * in the 'goalinfo' command output data about 7 days (worked x/y hours)
 * support short dates in "hoursperday" command
-* get rid of subprojects, leave only projects.
-  - create projects.parent field
-  - add field timelog.project_id with corresponding key
-  - make a script that will go for each subproject and:
-    * create corresponding projects record (with same projects.parent value as in subprojects.parent)
-    * fill timelog.project_id field with new ID for all timelog.subproject_id = <OLD_ID>
-  - remove field.timelog.subproject_id field
-  - remove goals.subproject_id field
-  - fix code
 * ability to archive old subprojects.
   - add field archived_at
   - select old subprojects list this:
@@ -26,5 +17,6 @@ TODO
     | where sp.project_id = 1
     |   and t.id is null
     | group by sp.id;
+* change general exceptions to custom exceptions
 * countable goals
 * add 'apply when' functionality to 'hoursperday' command
