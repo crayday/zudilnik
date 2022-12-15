@@ -198,7 +198,7 @@ class ZudilnikCmd(cmd.Cmd):
         return self.do_newproject(line)
 
     def do_newproject(self, line):
-        (project_name) = shlex.split(line)
+        (project_name,) = shlex.split(line)
         project_id = self.zud.add_new_project(project_name)
         vprint(f'Added project "{project_name}" #{project_id}')
 
