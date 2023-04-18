@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
-import os
 import sys
-from datetime import time as dttime
-from Zudilnik import Zudilnik
-from ZudilnikCmd import ZudilnikCmd
-from app import init_app
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from config import Config
+from app_registry import AppRegistry
+from cli.main import ZudilnikCmd
+
 
 def runcmd_uninterrupted(cmdobj):
     try:
         cmdobj.cmdloop()
-    except Exception as e:
-        print("Error: "+str(e))
+    except BaseException as e:
+        error_msg = str(e)
+        if not error_msg:
+            error_msg = type(e).__name__
+        print(f"Error: {error_msg}")
         runcmd_uninterrupted(cmdobj)
 
-deadline = dttime(6, 0) # 06:00 AM
-#dbpath = os.path.dirname(os.path.abspath(__file__))+"/db.sqlite3"
-dbpath = os.getenv("HOME")+"/Dropbox/zudilnik/db.sqlite3"
-init_app(dbpath)
-zudcmd = ZudilnikCmd(Zudilnik(deadline, dbpath))
 
-if len(sys.argv) >= 2:
-    (script_name, *params) = sys.argv
-    zudcmd.onecmd(" ".join(params))
-else:
-    runcmd_uninterrupted(zudcmd)
+if __name__ == '__main__':
+    config = Config()
+
+    engine = create_engine(config.database_uri, future=True)
+    session = Session(engine)
+
+    app = AppRegistry(config, session)
+
+    zudcmd = ZudilnikCmd(app)
+
+    if len(sys.argv) >= 2:
+        (script_name, *params) = sys.argv
+        zudcmd.onecmd(" ".join(params))
+    else:
+        runcmd_uninterrupted(zudcmd)

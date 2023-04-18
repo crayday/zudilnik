@@ -1,10 +1,11 @@
-from app import db
-from sqlalchemy import select, Column, Integer, String
+from sqlalchemy import Column, Integer, String
+from models import Base
 
-class User(db.model):
+
+class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    name = Column(String)
-    
+    name = Column(String, unique=True)
+
     def __repr__(self):
         return f'<User #{self.id} {self.name}>'
