@@ -70,6 +70,12 @@ def get_goal_type_names() -> list[str]:
 
 
 def seconds_to_hms(seconds: int) -> str:
+    """
+    Convert seconds to a human-readable hours, minutes, and seconds string.
+
+    Example:
+        seconds_to_hms(3666) -> "1h 1m 6s"
+    """
     remain_seconds = int(seconds % 60)
     minutes = int(seconds // 60)
     remain_minutes = int(minutes % 60)

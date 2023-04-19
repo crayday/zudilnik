@@ -226,8 +226,11 @@ class TimeLogCommand(BaseCommand):
                     int(datetime.utcnow().timestamp()) - record.started_at
                 )
 
+            comment = record.comment if record.comment else '...'
+            started_at = started_at_dt.strftime("%H:%M")
+
             self.print(
-                f"#{record.id} {record.started_at}-{stoped_at}: "
+                f"#{record.id} {started_at}-{stoped_at}: "
                 f"[{project.name}] - "
-                f"{record.comment} ({seconds_to_hms(duration)})"
+                f"{comment} ({seconds_to_hms(duration)})"
             )

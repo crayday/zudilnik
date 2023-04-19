@@ -128,7 +128,7 @@ class GoalCommand(BaseCommand):
         return self.do_goalsinfo(line)
 
     def do_goalsinfo(self, line: str) -> None:
-		pass  # TODO
+        pass  # TODO
         # goals_info = self.zud.get_goals_info()
         # for goal in goals_info:
         #     print(f"# {goal['name']}")
@@ -156,7 +156,7 @@ class GoalCommand(BaseCommand):
         goal_name, from_date, to_date = n_params_from_line(line, 3)
         if not to_date:
             to_date = from_date
-		pass  # TODO
+        pass  # TODO
         # worked_time, from_dt, to_dt = self.zud.worked_on_goal2(
         #     goal_name, from_date, to_date)
         # print(f"worked {worked_time} from {from_dt} to {to_dt} on {goal_name}")
@@ -183,6 +183,6 @@ class GoalCommand(BaseCommand):
         project_name, from_date, to_date = n_params_from_line(line, 3)
         if not to_date:
             to_date = from_date
-		pass  # TODO
+        pass  # TODO
         # worked_time, from_dt, to_dt = self.zud.worked_on_project(project_name, from_date, to_date)
         # print(f"worked {worked_time} from {from_dt} to {to_dt} on {project_name}")
