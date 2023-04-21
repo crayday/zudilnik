@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -15,7 +16,8 @@ def app() -> AppRegistry:
         con.execute(text("PRAGMA foreign_keys = ON;"))
     Base.metadata.create_all(engine)
     session = Session(engine)
-    return AppRegistry(config=config, session=session)
+    now = lambda: datetime.fromtimestamp(0)  # 1970-01-01
+    return AppRegistry(config, session, now)
 
 
 @pytest.fixture(scope='module')

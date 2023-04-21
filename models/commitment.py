@@ -110,7 +110,7 @@ class Commitment(Base):
             raise ValueError(f"Goal '{goal_name}' was not found")
 
         commitment_date = get_day_regarding_deadline(
-            app.config, datetime.now()
+            app.config, app.now()
         )
         cls._deactivate_previous_commitments(
             app, goal, weekdays, commitment_date)

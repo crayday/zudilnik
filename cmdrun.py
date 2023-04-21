@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from config import Config
@@ -23,8 +24,9 @@ if __name__ == '__main__':
 
     engine = create_engine(config.database_uri, future=True)
     session = Session(engine)
+    now = lambda: datetime.now()
 
-    app = AppRegistry(config, session)
+    app = AppRegistry(config, session, now)
 
     zudcmd = ZudilnikCmd(app)
 

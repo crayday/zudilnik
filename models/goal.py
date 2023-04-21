@@ -1,4 +1,3 @@
-from datetime import datetime, date, time, timedelta
 from enum import Enum
 from typing import TypeVar
 from sqlalchemy import (
@@ -53,7 +52,7 @@ class Goal(Base):
             project_id=project.id,
             name=goal_name,
             type=goal_type,
-            created_at=int(datetime.utcnow().timestamp())
+            created_at=int(app.now().timestamp())
         )
 
         app.session.add(goal)
@@ -125,7 +124,7 @@ class Goal(Base):
                 cls.user_id == user_id,
                 cls.name == goal_name
             )
-            .update({cls.archived_at: int(datetime.utcnow().timestamp())})
+            .update({cls.archived_at: int(app.now().timestamp())})
         )
 
         app.session.commit()

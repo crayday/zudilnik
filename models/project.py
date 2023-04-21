@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import TypeVar
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import aliased
@@ -28,7 +27,7 @@ class Project(Base):
         project = cls(
             name=project_name,
             user_id=user_id,
-            created_at=int(datetime.utcnow().timestamp())
+            created_at=int(app.now().timestamp())
         )
         app.session.add(project)
         app.session.commit()
@@ -52,7 +51,7 @@ class Project(Base):
             parent_id=project.id,
             user_id=user_id,
             name=subproject_name,
-            created_at=int(datetime.utcnow().timestamp())
+            created_at=int(app.now().timestamp())
         )
         app.session.add(subproject)
         app.session.commit()

@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, date, time, timedelta
 from config import Config
+from app_registry import AppRegistry
 
 
 def parse_weekday_filter(weekday_filter: str) -> list[int]:
@@ -35,7 +36,7 @@ def parse_weekday_filter(weekday_filter: str) -> list[int]:
     return weekdays
 
 
-def datetime_from_string(time_str: str) -> datetime:
+def datetime_from_string(app: AppRegistry, time_str: str) -> datetime:
     """
     Convert a time string to a datetime object.
 
@@ -57,7 +58,7 @@ def datetime_from_string(time_str: str) -> datetime:
     :raises ValueError: If the input string doesn't match any supported format.
     """
     if match := re.match(r'(\d{2}):(\d{2})(?::(\d{2}))?', time_str):
-        now = datetime.now()
+        now = app.now()
         second = int(match.group(3)) if match.group(3) else 0
         dt = now.replace(
             hour=int(match.group(1)),

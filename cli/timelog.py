@@ -223,7 +223,7 @@ class TimeLogCommand(BaseCommand):
             else:
                 stoped_at = '.....'
                 duration = (
-                    int(datetime.utcnow().timestamp()) - record.started_at
+                    int(self.app.now().timestamp()) - record.started_at
                 )
 
             comment = record.comment if record.comment else '...'

@@ -1,4 +1,3 @@
-from datetime import datetime
 import re
 from typing import TypeVar
 from dataclasses import dataclass
@@ -104,7 +103,7 @@ class TimeLog(Base):
         new_time_record = cls(
             user_id=user_id,
             project_id=project_to_start.id,
-            started_at=int(datetime.utcnow().timestamp()),
+            started_at=int(app.now().timestamp()),
             comment=comment
         )
         app.session.add(new_time_record)
@@ -205,7 +204,7 @@ class TimeLog(Base):
         )
         """
         record = cls.get_record(app, user_id, record_identifier)
-        started_at_dt = datetime_from_string(time_str)
+        started_at_dt = datetime_from_string(app, time_str)
 
         if started_at_dt and record.stoped_at:
             duration = record.stoped_at - int(started_at_dt.timestamp())
@@ -235,7 +234,7 @@ class TimeLog(Base):
         )
         """
         record = cls.get_record(app, user_id, record_identifier)
-        stopped_at_dt = datetime_from_string(time_str)
+        stopped_at_dt = datetime_from_string(app, time_str)
         if record.started_at and stopped_at_dt:
             duration = (
                 int(stopped_at_dt.timestamp()) - record.started_at
@@ -274,7 +273,7 @@ class TimeLog(Base):
         return record
 
     def stop(self, app: AppRegistry, commit: bool = True) -> None:
-        now = int(datetime.utcnow().timestamp())
+        now = int(app.now().timestamp())
         self.stoped_at = now
         self.duration = now - self.started_at
         if commit:

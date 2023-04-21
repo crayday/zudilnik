@@ -39,14 +39,6 @@ def matching_options(text: str, options: list[str]) -> list[str]:
     return [option for option in options if option.startswith(text)]
 
 
-def cmd_prompt():
-    return f"{datetime.now().strftime('%H:%M')}> "
-
-
-def vprint(string: str):  # verbose print
-    print(f"{datetime.now().strftime('%H:%M')}: {string}")
-
-
 def is_record_identifier(param: str) -> bool:
     return re.fullmatch(r'(-?\d+|last|(pen)+ult)', param)
 
